@@ -17,6 +17,7 @@
 
 | 文件 | 说明 |
 |---|---|
+| `cascade_quick_samples.json` | **快速样例**：5 组安神镇定类常用药物录入参数，适合手动逐条测试 |
 | `cascade_test_all_9.json` | 安神镇定类 9 种药物的级联检测输入参数 |
 | `cascade_test_enterprise.json` | 企业版 6 个类别共 39 种药物的级联检测输入参数 |
 

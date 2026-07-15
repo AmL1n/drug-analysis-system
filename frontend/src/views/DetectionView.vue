@@ -1378,6 +1378,36 @@ onBeforeUnmount(() => {
   :deep(.el-input-number) {
     width: 100%;
   }
+
+  :deep(.el-collapse) {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  :deep(.el-collapse-item__header) {
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.92);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 0 16px;
+    font-weight: 500;
+  }
+
+  :deep(.el-collapse-item__wrap) {
+    background: transparent;
+    border-bottom: none;
+  }
+
+  :deep(.el-collapse-item__content) {
+    background: transparent;
+    color: rgba(255, 255, 255, 0.86);
+    padding: 16px;
+  }
+
+  :deep(.el-collapse-item__arrow) {
+    color: rgba(255, 255, 255, 0.7);
+  }
 }
 
 .cascade-result {
