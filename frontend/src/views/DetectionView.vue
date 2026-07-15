@@ -287,7 +287,7 @@ const configExpanded = ref(false)
 const experimentConfig = reactive({
   modelType: 'fusion',
   topN: 10,
-  confidenceThreshold: 0.5,
+  confidenceThreshold: 0.7,
   rrtTolerance: 0.02,
   uvDistanceThreshold: 0.15,
   areaRatioMethod: 'relative_error' as 'relative_error' | 'cosine' | 'correlation',
@@ -381,37 +381,43 @@ function renderChart() {
     chartInstance = echarts.init(chartRef.value, 'dark')
   }
 
-  const time = chromatogram.value.time
-  const intensity = chromatogram.value.intensity
-  const samplePeaks = chromatogram.value.peaks || []
-  const refPeaks = selectedDrug.value?.referencePeaks || []
+  try {
+    const time = chromatogram.value.time
+    const intensity = chromatogram.value.intensity
+    const samplePeaks = chromatogram.value.peaks || []
+    const refPeaks = selectedDrug.value?.referencePeaks || []
 
-  const sampleMax = Math.max(...intensity, 1)
-  const sampleCurve = time.map((t, i) => [t, intensity[i]])
-  const referenceCurve = buildReferenceCurve(time, refPeaks, sampleMax)
+    if (!time || !intensity || time.length === 0 || intensity.length === 0) {
+      console.warn('色谱图数据为空，无法绘图')
+      return
+    }
 
-  const sampleScatter = samplePeaks.map((p) => ({
-    value: [p.retentionTime, findIntensity(p.retentionTime)],
-    ...p,
-  }))
-  const refScatter = refPeaks.map((p) => ({
-    value: [p.retentionTime, findReferenceIntensity(referenceCurve, p.retentionTime)],
-    ...p,
-  }))
+    const sampleMax = Math.max(...intensity, 1)
+    const sampleCurve = time.map((t, i) => [t, intensity[i]])
+    const referenceCurve = buildReferenceCurve(time, refPeaks, sampleMax)
 
-  const markLineData = refPeaks.map((p) => ({
-    xAxis: p.retentionTime,
-    label: {
-      formatter: `P${p.peakIndex}`,
-      color: 'rgba(255,255,255,0.8)',
-      fontSize: 10,
-    },
-    lineStyle: {
-      color: 'rgba(255, 200, 120, 0.5)',
-      type: 'dashed' as const,
-      width: 1,
-    },
-  }))
+    const sampleScatter = samplePeaks.map((p) => ({
+      value: [p.retentionTime, findIntensity(p.retentionTime)],
+      ...p,
+    }))
+    const refScatter = refPeaks.map((p) => ({
+      value: [p.retentionTime, findReferenceIntensity(referenceCurve, p.retentionTime)],
+      ...p,
+    }))
+
+    const markLineData = refPeaks.map((p) => ({
+      xAxis: p.retentionTime,
+      label: {
+        formatter: `P${p.peakIndex}`,
+        color: 'rgba(255,255,255,0.8)',
+        fontSize: 10,
+      },
+      lineStyle: {
+        color: 'rgba(255, 200, 120, 0.5)',
+        type: 'dashed' as const,
+        width: 1,
+      },
+    }))
 
   const series: echarts.SeriesOption[] = [
     {
@@ -547,7 +553,10 @@ function renderChart() {
       series,
     },
     true
-  )
+    )
+  } catch (error) {
+    console.error('绘制色谱图失败:', error)
+  }
 }
 
 function findIntensity(rt: number): number {
