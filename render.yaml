@@ -18,7 +18,7 @@ services:
       - key: FLASK_ENV
         value: production
       - key: DATABASE_URL
-        value: sqlite:///app/data/drug_check.db
+        value: sqlite:///tmp/drug_check.db
       - key: CORS_ORIGINS
         value: https://drug-analysis-frontend.onrender.com
       - key: JWT_SECRET_KEY
