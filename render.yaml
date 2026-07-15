@@ -35,5 +35,15 @@ services:
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
     envVars:
+      # 使用相对路径 /api，由 Render 的 rewrite 规则代理到后端，避免硬编码后端域名
       - key: VITE_API_BASE_URL
-        value: https://drug-analysis-backend.onrender.com/api
+        value: /api
+    routes:
+      # API 请求代理到后端服务（* 保留原路径）
+      - type: rewrite
+        source: /api/*
+        destination: https://drug-analysis-backend.onrender.com/api/*
+      # Vue Router 的 SPA fallback
+      - type: rewrite
+        source: /*
+        destination: /index.html
