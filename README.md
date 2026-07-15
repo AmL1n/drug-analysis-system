@@ -79,26 +79,23 @@ npm run dev
 
 ### 4. 导入示例对照品库
 
-启动后端后，示例类别会自动创建。可通过页面“药品库 → 导入”上传 `samples/demo_data/demo_drugs_full.json`，或执行 SQL 脚本导入安神镇定类 9 种对照品：
+启动后端后，示例类别会自动创建。可通过页面“药品库 → 导入”上传 `samples/enterprise/drug_library_sedatives.json`：
 
 ```bash
-cd backend
-sqlite3 drug_check_dev.db < sql/seed_sample_library.sql
+# 页面导入：药品库 → 导入 → 选择 samples/enterprise/drug_library_sedatives.json
 ```
 
 > 对照品库 JSON 支持 `rt`/`rrt`、`lambda1`/`lambda2` 以及 `a245`/`a250`/`a255`/`a260` 四个波长峰面积常数，导入时会同时创建药物、参考峰、面积常数和默认模型参数。
 
 ## 样本数据
 
-`samples/` 目录下提供以下示例文件：
+`samples/enterprise/` 目录下提供企业版示例文件：
 
 | 文件 | 说明 |
 |------|------|
-| `sample_chromatogram.csv` / `.xlsx` | 完整色谱图，可用于检测分析 |
-| `sample_retention_time.txt` | 标准保留时间导入格式 |
-| `sample_peak_area.txt` | 标准峰面积导入格式（4 组波长） |
-| `sample_spectra.xlsx` | 标准光谱吸收表 |
-| `demo_data/demo_drugs_full.json` | 企业版级联检测示例库（含 lambda_max 与 4 波长峰面积常数） |
+| `drug_library_sedatives.json` | 安神镇定类 9 种对照品库（保留时间、RRT、λmax、4 波长峰面积常数） |
+| `cascade_test_all_9.json` | 9 种药物的级联检测输入参数 |
+| `chromatogram_sedatives.csv` | 含 9 个峰的模拟色谱图，可用于文件上传自动检测 |
 
 ## 检测流程
 
