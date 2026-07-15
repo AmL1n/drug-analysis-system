@@ -97,12 +97,21 @@ def _check_production_secrets(app: Flask) -> None:
 
 
 def _ensure_directories(app: Flask) -> None:
-    """确保上传目录、日志目录存在。"""
+    """确保上传目录、日志目录与 SQLite 数据目录存在。"""
     upload_folder = app.config.get("UPLOAD_FOLDER")
     log_dir = app.config.get("LOG_DIR")
     for directory in (upload_folder, log_dir):
         if directory and not os.path.exists(directory):
             os.makedirs(directory, exist_ok=True)
+
+    # 若为 SQLite，确保数据库文件所在目录存在（容器/Render 无挂载时也能自创建）
+    database_uri = app.config.get("SQLALCHEMY_DATABASE_URI", "")
+    if database_uri and database_uri.startswith("sqlite:///"):
+        db_path = database_uri[len("sqlite:///"):]
+        if db_path and not db_path.startswith(":"):
+            db_dir = os.path.dirname(os.path.abspath(db_path))
+            if db_dir and not os.path.exists(db_dir):
+                os.makedirs(db_dir, exist_ok=True)
 
 
 def _setup_jwt_loaders(app: Flask) -> None:
