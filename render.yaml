@@ -18,7 +18,8 @@ services:
       - key: FLASK_ENV
         value: production
       - key: DATABASE_URL
-        value: sqlite:///tmp/drug_check.db
+        # SQLAlchemy 中 SQLite 绝对路径需要 4 个斜杠：sqlite:////<绝对路径>
+        value: sqlite:////app/data/drug_check.db
       - key: CORS_ORIGINS
         value: https://drug-analysis-frontend.onrender.com
       - key: JWT_SECRET_KEY
