@@ -281,12 +281,14 @@
       </el-tabs>
     </GlassCard>
 
-    <el-dialog v-model="detailVisible" title="药物详情" width="680px">
+    <el-dialog v-model="detailVisible" title="药物详情" width="720px">
       <el-descriptions v-if="selectedDrug" :column="2" border>
         <el-descriptions-item label="名称">{{ selectedDrug.name }}</el-descriptions-item>
         <el-descriptions-item label="CAS">{{ selectedDrug.cas || '-' }}</el-descriptions-item>
         <el-descriptions-item label="分子式">{{ selectedDrug.molecularFormula || '-' }}</el-descriptions-item>
         <el-descriptions-item label="类别">{{ selectedDrug.categoryId ? categoryMap[selectedDrug.categoryId] : '-' }}</el-descriptions-item>
+        <el-descriptions-item label="λmax 1">{{ selectedDrug.lambdaMax1 ?? '-' }}</el-descriptions-item>
+        <el-descriptions-item label="λmax 2">{{ selectedDrug.lambdaMax2 ?? '-' }}</el-descriptions-item>
         <el-descriptions-item label="说明" :span="2">{{ selectedDrug.description || '-' }}</el-descriptions-item>
       </el-descriptions>
       <h4 class="detail-section">参考峰</h4>
@@ -297,6 +299,13 @@
         <el-table-column prop="relativeRetentionTime" label="相对保留时间" />
         <el-table-column prop="areaRatio" label="面积比" />
         <el-table-column prop="wavelength" label="波长" />
+      </el-table>
+      <h4 class="detail-section">峰面积常数</h4>
+      <el-empty v-if="!selectedDrug?.areaConstants?.length" description="暂无峰面积常数" />
+      <el-table v-else :data="selectedDrug.areaConstants" border size="small" style="width: 100%">
+        <el-table-column prop="wavelength" label="波长 (nm)" width="120" />
+        <el-table-column prop="area" label="面积常数" />
+        <el-table-column prop="ratioTo250" label="与 A250 比值" />
       </el-table>
     </el-dialog>
   </div>
@@ -339,7 +348,7 @@ const pagination = reactive({
   total: 0,
 })
 const detailVisible = ref(false)
-const selectedDrug = ref<DrugItem & { peaks?: any[]; spectra?: any[] } | null>(null)
+const selectedDrug = ref<DrugItem & { peaks?: any[]; spectra?: any[]; lambdaMax1?: number; lambdaMax2?: number; areaConstants?: any[] } | null>(null)
 
 const drugOptions = ref<DrugItem[]>([])
 
