@@ -1,6 +1,7 @@
 # Render Blueprint
-# 部署前请先在 Render Dashboard 创建 Blueprint 并关联本仓库，
-# 然后在环境变量中填入你自己的 JWT_SECRET_KEY 与 SECRET_KEY。
+# 部署前请先在 Render Dashboard 创建 Blueprint 并关联本仓库。
+# JWT_SECRET_KEY 与 SECRET_KEY 已配置为 Render 自动生成；
+# 如需自定义，可在 Dashboard 对应服务的环境变量中覆盖。
 
 services:
   - type: web
@@ -14,6 +15,8 @@ services:
         value: production
       - key: DATABASE_URL
         value: sqlite:///app/data/drug_check.db
+      - key: CORS_ORIGINS
+        value: https://drug-analysis-frontend.onrender.com
       - key: JWT_SECRET_KEY
         generateValue: true
       - key: SECRET_KEY
@@ -23,7 +26,8 @@ services:
       mountPath: /app/data
       sizeGB: 1
 
-  - type: static
+  # Render 的 static site 属于 web 类型，并设置 runtime: static
+  - type: web
     name: drug-analysis-frontend
     runtime: static
     rootDir: frontend

@@ -12,8 +12,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# 创建上传目录与日志目录
-RUN mkdir -p uploads logs
+# 创建上传目录、日志目录与 SQLite 数据目录（Render Disk 挂载点）
+RUN mkdir -p uploads logs /app/data
 
 EXPOSE 5000
 
