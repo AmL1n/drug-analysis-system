@@ -185,9 +185,9 @@
                   <h3 class="section-title">Top 候选药物</h3>
                   <div class="filter-tip">
                     <el-icon size="14"><InfoFilled /></el-icon>
-                    <span>置信度低于 20% 的结果已隐藏</span>
+                    <span>综合评分低于 20% 的结果已隐藏</span>
                     <el-tooltip
-                      content="置信度过低的候选结果参考价值有限，已自动过滤。可在上方「实验配置」中调整置信度阈值后重新检测。"
+                      content="综合评分过低的候选结果参考价值有限，已自动过滤。可在上方「实验配置」中调整置信度阈值后重新检测。"
                       placement="top"
                     >
                       <el-icon size="14" class="tip-icon"><InfoFilled /></el-icon>
@@ -624,7 +624,7 @@ const chromatogram = ref<ChromatogramData | null>(null)
 const chromatogramError = ref('')
 const detectionResults = ref<DetectionResultItem[]>([])
 const filteredDetectionResults = computed(() =>
-  detectionResults.value.filter((item) => item.confidence >= 0.2),
+  detectionResults.value.filter((item) => item.totalScore >= 0.2),
 )
 const selectedDrug = ref<DetectionResultItem | null>(null)
 const chartRef = ref<HTMLDivElement | null>(null)
