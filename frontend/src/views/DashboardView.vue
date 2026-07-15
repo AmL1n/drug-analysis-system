@@ -123,6 +123,7 @@ import {
   Timer,
 } from '@element-plus/icons-vue'
 import { getHealth, getStats, type HealthInfo } from '@/api/common'
+import { formatChinaTime as formatTime } from '@/utils/formatTime'
 import GlassCard from '@/components/GlassCard.vue'
 import GlassButton from '@/components/GlassButton.vue'
 
@@ -154,14 +155,6 @@ async function checkHealth() {
     ElMessage.error('无法连接到后端服务')
   } finally {
     loading.value = false
-  }
-}
-
-function formatTime(isoTime: string): string {
-  try {
-    return new Date(isoTime).toLocaleString('zh-CN')
-  } catch {
-    return isoTime
   }
 }
 

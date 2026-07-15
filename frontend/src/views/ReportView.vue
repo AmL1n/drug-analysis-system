@@ -5,7 +5,11 @@
       <el-table v-loading="loading" :data="samples" border stripe style="width: 100%">
         <el-table-column prop="sampleNo" label="样品编号" min-width="160" />
         <el-table-column prop="sampleName" label="样品名称" min-width="160" />
-        <el-table-column prop="createdAt" label="检测时间" min-width="180" />
+        <el-table-column prop="createdAt" label="检测时间" min-width="180">
+          <template #default="{ row }">
+            {{ formatChinaTime(row.createdAt) }}
+          </template>
+        </el-table-column>
         <el-table-column prop="status" label="状态" width="120">
           <template #default="{ row }">
             <el-tag :type="statusType[row.status] || 'info'" size="small">
@@ -44,6 +48,7 @@ import { onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { listSamples, type SampleItem } from '@/api/sample'
 import { downloadReport as apiDownloadReport } from '@/api/detection'
+import { formatChinaTime } from '@/utils/formatTime'
 import GlassCard from '@/components/GlassCard.vue'
 import GlassButton from '@/components/GlassButton.vue'
 

@@ -44,6 +44,7 @@
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getLogs, type OperationLogItem } from '@/api/common'
+import { formatChinaTime as formatTime } from '@/utils/formatTime'
 import GlassCard from '@/components/GlassCard.vue'
 
 const loading = ref(false)
@@ -79,14 +80,6 @@ function handleSizeChange(size: number) {
   pagination.pageSize = size
   pagination.page = 1
   loadLogs()
-}
-
-function formatTime(isoTime: string): string {
-  try {
-    return new Date(isoTime).toLocaleString('zh-CN')
-  } catch {
-    return isoTime
-  }
 }
 
 onMounted(() => {

@@ -35,6 +35,14 @@ def _to_decimal(value: Any, allow_none: bool = False) -> Optional[Decimal]:
         raise ValueError(f"无法解析数值 {value!r}: {exc}")
 
 
+def _safe_str(value: Any) -> Optional[str]:
+    """安全地将值转为非空字符串，空值返回 None。"""
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text if text else None
+
+
 def _parse_wavelength(value: Any) -> Optional[Decimal]:
     """解析波长：'/'、'／' 或空表示无。"""
     if value is None:
@@ -45,12 +53,36 @@ def _parse_wavelength(value: Any) -> Optional[Decimal]:
     return _to_decimal(text)
 
 
-def _get_or_create_category(category_id: Optional[int]) -> DrugCategory:
-    """获取导入目标类别；未指定时使用默认类别"导入药物"。"""
+def _get_or_create_category(
+    category_id: Optional[int] = None,
+    category_name: Optional[str] = None,
+) -> DrugCategory:
+    """获取导入目标类别；未指定时使用默认类别"导入药物"。
+
+    支持按 ID、按名称查找或自动创建新类别。
+    """
     if category_id is not None:
         category = db.session.get(DrugCategory, category_id)
         if category is None:
             raise ParamValidationException("指定的药物类别不存在")
+        return category
+
+    if category_name:
+        category = DrugCategory.query.filter_by(name=category_name).first()
+        if category is not None:
+            return category
+        # 按名称自动创建新类别
+        max_code = db.session.query(db.func.max(DrugCategory.code)).scalar() or 0
+        code = max(max_code + 1, 900)
+        category = DrugCategory(
+            name=category_name,
+            code=code,
+            description=f"{category_name}导入类别",
+            wavelengths=[245, 250, 255, 260],
+            sort_order=code,
+        )
+        db.session.add(category)
+        db.session.flush()
         return category
 
     category = DrugCategory.query.filter_by(name="导入药物").first()
@@ -170,8 +202,6 @@ def import_library_from_json(
     if not isinstance(rt_list, list) or not isinstance(area_list, list):
         raise ParamValidationException("JSON 必须包含 rt 和 area 数组")
 
-    category = _get_or_create_category(category_id)
-
     area_map: Dict[str, Dict[str, Any]] = {}
     for record in area_list:
         if not isinstance(record, dict):
@@ -208,13 +238,20 @@ def import_library_from_json(
                     record.get("rrt"), allow_none=True
                 )
 
+                # 优先按药物记录中的 category 字段决定类别；否则使用传入的 category_id
+                record_category_name = str(record.get("category", "")).strip() or None
+                drug_category = _get_or_create_category(
+                    category_id=category_id if not record_category_name else None,
+                    category_name=record_category_name,
+                )
+
                 drug = Drug.query.filter_by(name=drug_name).first()
                 is_new = drug is None
 
                 if is_new:
                     drug = Drug(
                         name=drug_name,
-                        category_id=category.id,
+                        category_id=drug_category.id,
                         peak_count=1,
                         status=1,
                     )
@@ -223,8 +260,18 @@ def import_library_from_json(
                     ReferencePeak.query.filter_by(drug_id=drug.id).delete()
                     ReferenceSpectrum.query.filter_by(drug_id=drug.id).delete()
                     DrugAreaConstant.query.filter_by(drug_id=drug.id).delete()
-                    drug.category_id = category.id
+                    drug.category_id = drug_category.id
                     drug.peak_count = 1
+
+                # 补充 CAS、分子式、说明等元数据
+                drug.cas = _safe_str(record.get("cas")) or drug.cas
+                drug.molecular_formula = (
+                    _safe_str(record.get("molecular_formula"))
+                    or drug.molecular_formula
+                )
+                drug.description = (
+                    _safe_str(record.get("description")) or drug.description
+                )
 
                 db.session.flush()
 

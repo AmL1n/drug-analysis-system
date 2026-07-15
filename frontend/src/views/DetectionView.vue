@@ -164,7 +164,7 @@
                     {{ result.summary.detected_count }}
                   </el-tag>
                 </el-descriptions-item>
-                <el-descriptions-item label="检测时间">{{ result.detect_time || '-' }}</el-descriptions-item>
+                <el-descriptions-item label="检测时间">{{ formatChinaTime(result.detect_time) }}</el-descriptions-item>
               </el-descriptions>
             </div>
 
@@ -266,6 +266,7 @@ import {
   type DetectionResultItem,
 } from '@/api/detection'
 import { getSampleChromatogram, type ChromatogramData } from '@/api/sample'
+import { formatChinaTime } from '@/utils/formatTime'
 import GlassCard from '@/components/GlassCard.vue'
 import GlassButton from '@/components/GlassButton.vue'
 

@@ -48,6 +48,7 @@ import { UserFilled } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores/user'
 import { getCurrentUser } from '@/api/auth'
+import { formatChinaTime } from '@/utils/formatTime'
 import GlassCard from '@/components/GlassCard.vue'
 import GlassButton from '@/components/GlassButton.vue'
 
@@ -62,12 +63,7 @@ const roleText = computed(() => {
 
 const lastLoginText = computed(() => {
   const raw = lastLoginAt.value || (userStore.userInfo as any)?.lastLoginAt
-  if (!raw) return '-'
-  try {
-    return new Date(raw).toLocaleString('zh-CN')
-  } catch {
-    return raw
-  }
+  return formatChinaTime(raw)
 })
 
 async function loadProfile() {
