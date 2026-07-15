@@ -31,7 +31,13 @@ from .library import (  # noqa: E402,F401
     ReferenceSpectrum,
     ModelParam,
 )
-from .sample import UploadedFile, Sample, SamplePeak, SampleSpectrum  # noqa: E402,F401
+from .sample import (  # noqa: E402,F401
+    SampleChromatogram,
+    UploadedFile,
+    Sample,
+    SamplePeak,
+    SampleSpectrum,
+)
 from .detection import (  # noqa: E402,F401
     DetectionTask,
     TaskSample,

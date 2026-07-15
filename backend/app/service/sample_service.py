@@ -63,6 +63,18 @@ def create_sample(
     sample_peaks = [_peak_to_sample_peak(peak) for peak in peaks]
     SampleDAO.add_peaks(sample.id, sample_peaks)
 
+    # 持久化原始色谱图，避免无持久盘环境（如 Render free tier）文件丢失后无法绘图
+    SampleDAO.set_chromatogram(
+        sample.id,
+        time_list=chromatogram.retention_time.tolist()
+        if hasattr(chromatogram.retention_time, "tolist")
+        else list(chromatogram.retention_time),
+        intensity_list=chromatogram.intensity.tolist()
+        if hasattr(chromatogram.intensity, "tolist")
+        else list(chromatogram.intensity),
+        wavelength=chromatogram.wavelength,
+    )
+
     # 更新样本状态为待检测
     SampleDAO.update_status(sample, "pending")
 

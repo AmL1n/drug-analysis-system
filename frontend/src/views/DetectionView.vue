@@ -245,6 +245,11 @@
             </div>
           </template>
           <div ref="chartRef" class="chart-container" />
+          <el-empty
+            v-if="chromatogramError"
+            :description="chromatogramError"
+            class="chart-empty"
+          />
         </GlassCard>
       </el-col>
     </el-row>
@@ -252,7 +257,7 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, reactive, ref, watch } from 'vue'
+import { nextTick, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { UploadFile } from 'element-plus'
 import { ArrowDown, DataAnalysis, Document, UploadFilled } from '@element-plus/icons-vue'
@@ -278,10 +283,12 @@ const detecting = ref(false)
 const result = ref<Record<string, any> | null>(null)
 const sampleId = ref<number | null>(null)
 const chromatogram = ref<ChromatogramData | null>(null)
+const chromatogramError = ref('')
 const detectionResults = ref<DetectionResultItem[]>([])
 const selectedDrug = ref<DetectionResultItem | null>(null)
 const chartRef = ref<HTMLDivElement | null>(null)
 let chartInstance: echarts.ECharts | null = null
+let resizeObserver: ResizeObserver | null = null
 
 const configExpanded = ref(false)
 const experimentConfig = reactive({
@@ -320,6 +327,7 @@ async function handleDetect() {
   currentStep.value = 1
   result.value = null
   chromatogram.value = null
+  chromatogramError.value = ''
   detectionResults.value = []
   selectedDrug.value = null
 
@@ -350,15 +358,29 @@ async function handleDetect() {
     ElMessage.success('检测完成')
 
     if (sampleId.value) {
-      const [chromRes, resultsRes] = await Promise.all([
-        getSampleChromatogram(sampleId.value),
-        getDetectionResults(sampleId.value),
-      ])
-      chromatogram.value = chromRes.data
-      detectionResults.value = resultsRes.data
-      if (detectionResults.value.length > 0) {
-        selectedDrug.value = detectionResults.value[0]
+      // 先获取检测结果，确保即使色谱图接口失败也能看到检测结论
+      try {
+        const resultsRes = await getDetectionResults(sampleId.value)
+        detectionResults.value = resultsRes.data
+        if (detectionResults.value.length > 0) {
+          selectedDrug.value = detectionResults.value[0]
+        }
+      } catch (error) {
+        console.error('加载检测结果失败:', error)
+        ElMessage.error('加载检测结果失败')
       }
+
+      // 再获取色谱图，失败时给出明确提示
+      try {
+        chromatogramError.value = ''
+        const chromRes = await getSampleChromatogram(sampleId.value)
+        chromatogram.value = chromRes.data
+      } catch (error: any) {
+        chromatogram.value = null
+        chromatogramError.value = error?.response?.data?.msg || '色谱图数据加载失败'
+        console.error('加载色谱图失败:', error)
+      }
+
       nextTick(() => renderChart())
     }
   } catch (error) {
@@ -375,10 +397,17 @@ function handleDrugSelect(row: DetectionResultItem | undefined) {
 }
 
 function renderChart() {
-  if (!chartRef.value || !chromatogram.value) return
+  if (!chartRef.value) return
 
-  if (!chartInstance) {
-    chartInstance = echarts.init(chartRef.value, 'dark')
+  // 清理旧实例，确保容器尺寸变化后能正确初始化
+  if (chartInstance) {
+    chartInstance.dispose()
+    chartInstance = null
+  }
+
+  if (!chromatogram.value) {
+    // 没有数据时不绘制，保留容器用于展示错误提示
+    return
   }
 
   try {
@@ -390,6 +419,15 @@ function renderChart() {
     if (!time || !intensity || time.length === 0 || intensity.length === 0) {
       console.warn('色谱图数据为空，无法绘图')
       return
+    }
+
+    chartInstance = echarts.init(chartRef.value, 'dark')
+
+    if (!resizeObserver) {
+      resizeObserver = new ResizeObserver(() => {
+        chartInstance?.resize()
+      })
+      resizeObserver.observe(chartRef.value)
     }
 
     const sampleMax = Math.max(...intensity, 1)
@@ -632,6 +670,18 @@ watch(
   () => renderChart(),
   { deep: true }
 )
+
+onBeforeUnmount(() => {
+  if (resizeObserver && chartRef.value) {
+    resizeObserver.unobserve(chartRef.value)
+    resizeObserver.disconnect()
+    resizeObserver = null
+  }
+  if (chartInstance) {
+    chartInstance.dispose()
+    chartInstance = null
+  }
+})
 </script>
 
 <style scoped lang="scss">
@@ -796,5 +846,12 @@ watch(
 .chart-container {
   width: 100%;
   height: 460px;
+}
+
+.chart-empty {
+  margin-top: -460px;
+  height: 460px;
+  position: relative;
+  z-index: 1;
 }
 </style>

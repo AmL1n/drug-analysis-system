@@ -13,6 +13,8 @@ from app.model import Sample, User
 from app.service.file_service import parse_file_to_chromatogram
 from app.service.log_service import log_operation
 from app.service.sample_service import create_sample, get_sample_detail, list_samples
+from app.dao.sample_dao import SampleDAO
+import json
 from app.utils.pagination import get_pagination_params
 from app.utils.response import page, success
 
@@ -168,10 +170,20 @@ def get_sample_chromatogram_view(sample_id: int):
     from app.dao.file_dao import UploadedFileDAO
 
     file_record = UploadedFileDAO.get_by_id(sample.file_id)
-    if file_record is None:
-        raise NotFoundException("原始文件不存在")
-
-    chromatogram = parse_file_to_chromatogram(file_record)
+    # 优先从数据库读取已持久化的色谱图，避免 Render 等无持久盘环境文件丢失
+    stored = SampleDAO.get_chromatogram(sample_id)
+    if stored:
+        time_data = json.loads(stored.time_json)
+        intensity_data = json.loads(stored.intensity_json)
+        wavelength = float(stored.wavelength) if stored.wavelength is not None else None
+    else:
+        # 兼容旧样本：从原始文件解析
+        if file_record is None:
+            raise NotFoundException("原始文件不存在且未找到持久化色谱图数据")
+        chromatogram = parse_file_to_chromatogram(file_record)
+        time_data = chromatogram.retention_time.tolist()
+        intensity_data = chromatogram.intensity.tolist()
+        wavelength = chromatogram.wavelength
 
     peaks = [
         {
@@ -185,9 +197,9 @@ def get_sample_chromatogram_view(sample_id: int):
 
     return success(
         data={
-            "time": chromatogram.retention_time.tolist(),
-            "intensity": chromatogram.intensity.tolist(),
-            "wavelength": chromatogram.wavelength,
+            "time": time_data,
+            "intensity": intensity_data,
+            "wavelength": wavelength,
             "peaks": peaks,
         }
     )

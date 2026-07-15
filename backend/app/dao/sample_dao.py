@@ -6,7 +6,8 @@
 from datetime import datetime
 from typing import List, Optional
 
-from app.model import Sample, SamplePeak, SampleSpectrum, db
+from app.model import Sample, SampleChromatogram, SamplePeak, SampleSpectrum, db
+import json
 
 
 class SampleDAO:
@@ -77,6 +78,33 @@ class SampleDAO:
             sp.sample_id = sample_id
             db.session.add(sp)
         db.session.commit()
+
+    @staticmethod
+    def set_chromatogram(
+        sample_id: int,
+        time_list: list,
+        intensity_list: list,
+        wavelength: Optional[float] = None,
+    ) -> SampleChromatogram:
+        existing = SampleChromatogram.query.filter_by(sample_id=sample_id).first()
+        if existing:
+            existing.time_json = json.dumps(time_list)
+            existing.intensity_json = json.dumps(intensity_list)
+            existing.wavelength = wavelength
+        else:
+            existing = SampleChromatogram(
+                sample_id=sample_id,
+                time_json=json.dumps(time_list),
+                intensity_json=json.dumps(intensity_list),
+                wavelength=wavelength,
+            )
+            db.session.add(existing)
+        db.session.commit()
+        return existing
+
+    @staticmethod
+    def get_chromatogram(sample_id: int) -> Optional[SampleChromatogram]:
+        return SampleChromatogram.query.filter_by(sample_id=sample_id).first()
 
 
 class SamplePeakDAO:

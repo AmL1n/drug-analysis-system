@@ -8,6 +8,40 @@ from datetime import datetime
 from . import db
 
 
+class SampleChromatogram(db.Model):
+    """样本原始色谱图数据表（解决 Render 等无持久盘环境文件丢失问题）。"""
+
+    __tablename__ = "sample_chromatograms"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True, comment="主键")
+    sample_id = db.Column(
+        db.Integer,
+        db.ForeignKey("samples.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+        comment="样本ID",
+    )
+    time_json = db.Column(db.Text, nullable=False, comment="保留时间数组(JSON)")
+    intensity_json = db.Column(db.Text, nullable=False, comment="强度数组(JSON)")
+    wavelength = db.Column(db.Numeric(8, 2), default=None, comment="检测波长(nm)")
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, comment="创建时间")
+    updated_at = db.Column(
+        db.DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        comment="更新时间",
+    )
+
+    sample = db.relationship("Sample", backref=db.backref("chromatogram", uselist=False))
+
+    __table_args__ = (
+        db.Index("idx_sample_chromatograms_sample_id", "sample_id"),
+    )
+
+    def __repr__(self) -> str:
+        return f"<SampleChromatogram sample={self.sample_id}>"
+
+
 class UploadedFile(db.Model):
     """上传文件记录表"""
 
