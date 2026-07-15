@@ -50,6 +50,36 @@ class DrugDAO:
     def list_all_active() -> List[Drug]:
         return Drug.query.filter_by(status=1).order_by(Drug.name).all()
 
+    @staticmethod
+    def delete(drug: Drug) -> None:
+        """删除药物及其关联的峰、光谱、峰面积常数。"""
+        # 级联删除关联数据
+        ReferencePeak.query.filter_by(drug_id=drug.id).delete()
+        ReferenceSpectrum.query.filter_by(drug_id=drug.id).delete()
+        DrugAreaConstant.query.filter_by(drug_id=drug.id).delete()
+        db.session.delete(drug)
+        db.session.commit()
+
+    @staticmethod
+    def delete_by_ids(drug_ids: List[int]) -> int:
+        """批量删除药物及其关联数据，返回删除数量。"""
+        if not drug_ids:
+            return 0
+        # 先删除关联数据
+        ReferencePeak.query.filter(ReferencePeak.drug_id.in_(drug_ids)).delete(
+            synchronize_session=False
+        )
+        ReferenceSpectrum.query.filter(ReferenceSpectrum.drug_id.in_(drug_ids)).delete(
+            synchronize_session=False
+        )
+        DrugAreaConstant.query.filter(DrugAreaConstant.drug_id.in_(drug_ids)).delete(
+            synchronize_session=False
+        )
+        # 再删除药物
+        count = Drug.query.filter(Drug.id.in_(drug_ids)).delete(synchronize_session=False)
+        db.session.commit()
+        return count
+
 
 class ReferencePeakDAO:
     """峰库 DAO。"""

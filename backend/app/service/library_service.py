@@ -135,6 +135,19 @@ def get_drug_detail(drug_id: int) -> dict:
     if drug is None:
         raise NotFoundException("药物不存在")
 
+
+def delete_drug(drug_id: int) -> None:
+    """删除单个药物。"""
+    drug = DrugDAO.get_by_id(drug_id)
+    if drug is None:
+        raise NotFoundException("药物不存在")
+    DrugDAO.delete(drug)
+
+
+def delete_drugs(drug_ids: List[int]) -> int:
+    """批量删除药物，返回删除数量。"""
+    return DrugDAO.delete_by_ids(drug_ids)
+
     peaks = ReferencePeakDAO.get_by_drug_id(drug_id)
     spectra = ReferenceSpectrumDAO.get_by_drug_id(drug_id)
     area_constants = DrugAreaConstantDAO.get_by_drug_id(drug_id)

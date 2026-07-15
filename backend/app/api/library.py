@@ -9,6 +9,8 @@ from flask_jwt_extended import jwt_required
 from app.errors.exceptions import ParamValidationException
 from app.service.library_import_service import import_library_from_json
 from app.service.library_service import (
+    delete_drug,
+    delete_drugs,
     get_drug_detail,
     list_categories,
     list_drugs,
@@ -118,3 +120,45 @@ def import_library_view():
     )
 
     return success(data=summary)
+
+
+@library_bp.route("/library/drugs/<int:drug_id>", methods=["DELETE"])
+@jwt_required()
+def delete_drug_view(drug_id: int):
+    """删除单个药物。"""
+    delete_drug(drug_id)
+    log_operation(
+        action="删除药物",
+        module="library",
+        target_type="drug",
+        target_id=drug_id,
+        detail={"drugId": drug_id},
+    )
+    return success(msg="删除成功")
+
+
+@library_bp.route("/library/drugs", methods=["DELETE"])
+@jwt_required()
+def batch_delete_drugs_view():
+    """批量删除药物。
+
+    请求体：{"ids": [1, 2, 3]}
+    """
+    data = request.get_json(silent=True) or {}
+    drug_ids = data.get("ids")
+    if not isinstance(drug_ids, list) or not drug_ids:
+        raise ParamValidationException("ids 必须是非空数组")
+
+    try:
+        drug_ids = [int(did) for did in drug_ids]
+    except (ValueError, TypeError):
+        raise ParamValidationException("ids 数组元素必须为整数")
+
+    count = delete_drugs(drug_ids)
+    log_operation(
+        action="批量删除药物",
+        module="library",
+        target_type="drug",
+        detail={"drugIds": drug_ids, "count": count},
+    )
+    return success(data={"deleted": count}, msg=f"成功删除 {count} 条药物")

@@ -31,6 +31,9 @@
                 <el-button :icon="Search" @click="handleSearch" />
               </template>
             </el-input>
+            <GlassButton danger :disabled="selectedDrugs.length === 0" @click="handleBatchDelete">
+              批量删除
+            </GlassButton>
           </div>
 
           <div class="import-section">
@@ -95,7 +98,9 @@
             border
             stripe
             style="width: 100%"
+            @selection-change="handleSelectionChange"
           >
+            <el-table-column type="selection" width="55" />
             <el-table-column prop="name" label="药物名称" min-width="160" />
             <el-table-column label="类别" min-width="120">
               <template #default="{ row }">
@@ -112,9 +117,12 @@
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="120" fixed="right">
+            <el-table-column label="操作" width="180" fixed="right">
               <template #default="{ row }">
-                <GlassButton primary @click="showDetail(row)">详情</GlassButton>
+                <div class="row-actions">
+                  <GlassButton primary @click="showDetail(row)">详情</GlassButton>
+                  <GlassButton danger @click="handleDelete(row)">删除</GlassButton>
+                </div>
               </template>
             </el-table-column>
           </el-table>
@@ -296,9 +304,11 @@
 
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, UploadFilled } from '@element-plus/icons-vue'
 import {
+  batchDeleteDrugs,
+  deleteDrug,
   getCategories,
   getDrugDetail,
   getDrugs,
@@ -363,6 +373,7 @@ const libraryImporting = ref(false)
 const libraryImportSuccess = ref(false)
 const libraryImportMessage = ref('')
 const libraryImportFailed = ref<{ name: string; reason: string }[]>([])
+const selectedDrugs = ref<DrugItem[]>([])
 
 async function loadCategories() {
   try {
@@ -421,6 +432,52 @@ async function showDetail(row: DrugItem) {
   } catch (error) {
     ElMessage.error('加载药物详情失败')
   }
+}
+
+async function handleDelete(row: DrugItem) {
+  try {
+    await ElMessageBox.confirm(`确定删除药物「${row.name}」吗？`, '提示', {
+      confirmButtonText: '删除',
+      cancelButtonText: '取消',
+      type: 'warning',
+    })
+    await deleteDrug(row.id)
+    ElMessage.success('删除成功')
+    loadDrugs()
+    loadDrugOptions()
+  } catch (error: any) {
+    if (error !== 'cancel' && error?.message !== 'cancel') {
+      ElMessage.error('删除失败')
+    }
+  }
+}
+
+async function handleBatchDelete() {
+  if (selectedDrugs.value.length === 0) {
+    ElMessage.warning('请先选择要删除的药物')
+    return
+  }
+  try {
+    await ElMessageBox.confirm(
+      `确定删除选中的 ${selectedDrugs.value.length} 条药物吗？`,
+      '提示',
+      { confirmButtonText: '删除', cancelButtonText: '取消', type: 'warning' },
+    )
+    const ids = selectedDrugs.value.map((d) => d.id)
+    await batchDeleteDrugs(ids)
+    ElMessage.success('批量删除成功')
+    selectedDrugs.value = []
+    loadDrugs()
+    loadDrugOptions()
+  } catch (error: any) {
+    if (error !== 'cancel' && error?.message !== 'cancel') {
+      ElMessage.error('批量删除失败')
+    }
+  }
+}
+
+function handleSelectionChange(rows: DrugItem[]) {
+  selectedDrugs.value = rows
 }
 
 async function loadDrugOptions() {
@@ -649,6 +706,11 @@ onMounted(() => {
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+.row-actions {
+  display: flex;
+  gap: 8px;
 }
 
 .import-result {

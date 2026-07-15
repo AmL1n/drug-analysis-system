@@ -91,3 +91,11 @@ export function importLibraryDrugs(data: FormData): Promise<ApiResponse<ImportLi
     headers: { 'Content-Type': 'multipart/form-data' },
   })
 }
+
+export function deleteDrug(id: number): Promise<ApiResponse<{ deleted: number }>> {
+  return request.delete(`/library/drugs/${id}`)
+}
+
+export function batchDeleteDrugs(ids: number[]): Promise<ApiResponse<{ deleted: number }>> {
+  return request.delete('/library/drugs', { data: { ids } })
+}

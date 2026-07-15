@@ -2,7 +2,7 @@
   <button
     ref="btnRef"
     class="glass-button"
-    :class="{ 'is-primary': primary, 'is-large': large, 'is-loading': loading, 'is-disabled': disabled }"
+    :class="{ 'is-primary': primary, 'is-danger': danger, 'is-large': large, 'is-loading': loading, 'is-disabled': disabled }"
     :disabled="disabled || loading"
     :type="type"
     @mousemove="onMouseMove"
@@ -22,6 +22,7 @@ import { computed, ref } from 'vue'
 
 interface Props {
   primary?: boolean
+  danger?: boolean
   large?: boolean
   loading?: boolean
   disabled?: boolean
@@ -30,6 +31,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   primary: false,
+  danger: false,
   large: false,
   loading: false,
   disabled: false,
@@ -47,9 +49,12 @@ const mouse = ref({ x: 0.5, y: 0.5 })
 const glowStyle = computed(() => {
   const x = mouse.value.x * 100
   const y = mouse.value.y * 100
-  const color = props.primary
-    ? 'rgba(64, 158, 255, 0.32)'
-    : 'rgba(255, 255, 255, 0.20)'
+  let color = 'rgba(255, 255, 255, 0.20)'
+  if (props.danger) {
+    color = 'rgba(245, 108, 108, 0.32)'
+  } else if (props.primary) {
+    color = 'rgba(64, 158, 255, 0.32)'
+  }
   return {
     background: `radial-gradient(circle 72px at ${x}% ${y}%, ${color}, transparent 70%)`,
     opacity: isHover.value ? 1 : 0,
@@ -157,6 +162,18 @@ function onClick(e: MouseEvent) {
     0 3px 14px rgba(64, 158, 255, 0.16),
     inset 0 1px 0 rgba(255, 255, 255, 0.16),
     inset 0 0 10px rgba(64, 158, 255, 0.08);
+}
+
+.glass-button.is-danger {
+  background: linear-gradient(
+    135deg,
+    rgba(245, 108, 108, 0.14) 0%,
+    rgba(245, 108, 108, 0.05) 100%
+  );
+  box-shadow:
+    0 3px 14px rgba(245, 108, 108, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    inset 0 0 10px rgba(245, 108, 108, 0.08);
 }
 
 .glass-button.is-large {
