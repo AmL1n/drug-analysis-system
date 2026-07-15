@@ -1,0 +1,34 @@
+# Render Blueprint
+# 部署前请先在 Render Dashboard 创建 Blueprint 并关联本仓库，
+# 然后在环境变量中填入你自己的 JWT_SECRET_KEY 与 SECRET_KEY。
+
+services:
+  - type: web
+    name: drug-analysis-backend
+    runtime: docker
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    plan: free
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: DATABASE_URL
+        value: sqlite:///app/data/drug_check.db
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: SECRET_KEY
+        generateValue: true
+    disk:
+      name: drug-analysis-data
+      mountPath: /app/data
+      sizeGB: 1
+
+  - type: static
+    name: drug-analysis-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://drug-analysis-backend.onrender.com/api

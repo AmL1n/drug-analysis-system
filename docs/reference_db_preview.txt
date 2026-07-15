@@ -1,0 +1,38 @@
+===== 工作表 1 =====
+        0          1                                       2        3                    4             5                  6        7                  8   9    10   11   12
+0     表格 1        NaN                                     NaN      NaN                  NaN           NaN                NaN      NaN                NaN NaN  NaN  NaN  NaN
+1      NaN        NaN                                     NaN      NaN              相对保留时间库       紫外吸收光谱库                NaN      NaN                NaN NaN  NaN  NaN  NaN
+2      NaN     数据库对照品                                    保留时间   参照保留时间               相对保留时间    Lambda 最大1         Lambda 最大2      NaN                NaN NaN  NaN  NaN  NaN
+3        1       咪达唑仑                                   6.256   12.988             0.481675         227.5                  /      NaN                NaN NaN  NaN  NaN  NaN
+4        2       苯巴比妥                                  10.821   12.988             0.833154         222.7                  ／      NaN                NaN NaN  NaN  NaN  NaN
+5        3      盐酸氯丙嗪                                  12.988   12.988                    1         255.8              308.1      NaN                NaN NaN  NaN  NaN  NaN
+6        4      艾司唑仑                                   16.865   12.988             1.298506         225.1                  /      NaN                NaN NaN  NaN  NaN  NaN
+7        5       奥沙西泮                                  17.434   12.988             1.342316         228.6              312.9      NaN                NaN NaN  NaN  NaN  NaN
+8        6      阿普唑仑                                   17.995   12.988              1.38551         223.9                  ／      NaN                NaN NaN  NaN  NaN  NaN
+9        7   三 唑 仑                                     19.532   12.988              1.50385         225.1                  ／      NaN                NaN NaN  NaN  NaN  NaN
+10       8     氯硝西泮                                    20.114   12.988              1.54866         220.4              310.5      NaN                NaN NaN  NaN  NaN  NaN
+11       9     地 西 泮                                   24.133   12.988               1.8581         231.0              360.1      NaN                NaN NaN  NaN  NaN  NaN
+12     NaN        NaN                                     NaN      NaN                  NaN           NaN                NaN      NaN                NaN NaN  NaN  NaN  NaN
+13     NaN        NaN                                  A245nm   A250nm    R1(A245nm/A250nm)        A255nm  R2(A255nm/A250nm)   A260nm  R3(A260nm/A250nm) NaN    p  NaN  NaN
+14     NaN     数据库对照品                                      面积       面积                  NaN            面积                NaN       面积                NaN NaN  NaN  NaN  NaN
+15       1       咪达唑仑                                 1595667  1403031               1.1373       1138550           0.811493   813884            0.58009 NaN  NaN  NaN  NaN
+16       2       苯巴比妥                                 1441107   983841             1.464776        729551           0.741533   626377           0.636665 NaN    d   dd  ddd
+17       3      盐酸氯丙嗪                                 3010872  4040773             0.745123       4726452            1.16969  3678992           0.910467 NaN   dd    d   ee
+18       4      艾司唑仑                                  1547526  1379153             1.122084       1032442           0.748606   720495           0.522418 NaN  ddd   ee    d
+19       5       奥沙西泮                                 2064921  1815930             1.137115       1540065           0.848086  1151876           0.634317 NaN  NaN  NaN  NaN
+20       6      阿普唑仑                                  1177304  1044196             1.127474        805899           0.771789   596511           0.571263 NaN  NaN  NaN  NaN
+21       7   三 唑 仑                                    1568987  1291095             1.215237        951835           0.737231   633825            0.49092 NaN  NaN  NaN  NaN
+22       8     氯硝西泮                                   1407669  1376894             1.022351       1313144             0.9537  1193772           0.867004 NaN  NaN  NaN  NaN
+23       9     地 西 泮                                  3087279  2673562             1.154744       2175960           0.813881  1720816           0.643642 NaN  NaN  NaN  NaN
+24     NaN        NaN                                     NaN      NaN                  NaN           NaN                NaN      NaN                NaN NaN  NaN  NaN  NaN
+25     第一步        NaN                                     NaN      NaN                  NaN          匹配结果                NaN      NaN                NaN NaN  NaN  NaN  NaN
+26  相对保留时间       未知物质                                    保留时间       tx  tx/ts(数值匹配对照品保留时间库）  数据库中的哪种对照品\n                NaN      NaN                NaN NaN  NaN  NaN  NaN
+27     NaN       参照物质                                    保留时间       ts                  NaN           NaN                NaN      NaN                NaN NaN  NaN  NaN  NaN
+28     NaN        NaN                                     NaN      NaN                  NaN           NaN                NaN      NaN                NaN NaN  NaN  NaN  NaN
+29  紫外吸收光谱       未知物质                              Lambda 最大1       b1     (数值匹配对照品紫外吸收光谱库）           NaN                NaN      NaN                NaN NaN  NaN  NaN  NaN
+30     NaN        NaN                              Lambda 最大2       b2                  NaN           NaN                NaN      NaN                NaN NaN  NaN  NaN  NaN
+31     NaN        NaN                                     NaN      NaN                  NaN           NaN                NaN      NaN                NaN NaN  NaN  NaN  NaN
+32     第二步        NaN                                     NaN      NaN                  NaN           NaN                NaN      NaN                NaN NaN  NaN  NaN  NaN
+33   峰面积常数       未知物质                                  A245nm   A250nm    R1(A245nm/A250nm)        A255nm  R2(A255nm/A250nm)   A260nm  R3(A260nm/A250nm) NaN  NaN  NaN  NaN
+34     NaN        NaN  R1,R2,R3的数值同时和数据库对照品中的数值进行比对，得出未知物质的种类      NaN                  NaN           NaN                NaN      NaN                NaN NaN  NaN  NaN  NaN
+

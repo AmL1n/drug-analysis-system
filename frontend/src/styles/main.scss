@@ -1,0 +1,158 @@
+:root {
+  --glass-bg: rgba(255, 255, 255, 0.07);
+  --glass-bg-strong: rgba(255, 255, 255, 0.11);
+  --glass-border: rgba(255, 255, 255, 0.14);
+  --glass-border-strong: rgba(255, 255, 255, 0.28);
+  --glass-glow: rgba(120, 180, 255, 0.35);
+  --glass-primary: rgba(64, 158, 255, 0.45);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: dark;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: #0b0d12;
+  background-image:
+    radial-gradient(at 0% 0%, hsla(253, 35%, 26%, 0.35) 0, transparent 50%),
+    radial-gradient(at 50% 0%, hsla(225, 55%, 30%, 0.32) 0, transparent 55%),
+    radial-gradient(at 100% 0%, hsla(339, 55%, 30%, 0.28) 0, transparent 50%),
+    radial-gradient(at 0% 100%, hsla(190, 45%, 24%, 0.28) 0, transparent 50%),
+    radial-gradient(at 100% 100%, hsla(280, 40%, 26%, 0.28) 0, transparent 50%);
+  background-size: 200% 200%;
+  animation: mesh-flow 26s ease infinite;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+@keyframes mesh-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.page-container {
+  background: rgba(12, 14, 19, 0.38);
+  backdrop-filter: blur(16px) saturate(120%);
+  -webkit-backdrop-filter: blur(16px) saturate(120%);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 20px;
+  padding: 24px;
+  min-height: calc(100vh - 140px);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28);
+}
+
+.page-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+  margin-bottom: 24px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Element Plus 暗色模式下的玻璃化微调 */
+html.dark .el-card {
+  background: var(--glass-bg);
+  border-color: var(--glass-border);
+  border-radius: 16px;
+  box-shadow:
+    0 8px 28px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+html.dark .el-card__header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+html.dark .el-table {
+  background: transparent;
+  --el-table-header-bg-color: rgba(255, 255, 255, 0.06);
+  --el-table-row-hover-bg-color: rgba(255, 255, 255, 0.08);
+  --el-table-border-color: rgba(255, 255, 255, 0.1);
+}
+
+html.dark .el-table th.el-table__cell {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+html.dark .el-table td.el-table__cell {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+html.dark .el-table--striped .el-table__body tr.el-table__row--striped td.el-table__cell {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+html.dark .el-input__wrapper,
+html.dark .el-textarea__inner,
+html.dark .el-select .el-input__wrapper {
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12) inset;
+}
+
+html.dark .el-input__inner,
+html.dark .el-textarea__inner {
+  color: rgba(255, 255, 255, 0.92);
+}
+
+html.dark .el-form-item__label {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+html.dark .el-tabs__item {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+html.dark .el-tabs__item.is-active {
+  color: #409eff;
+}
+
+html.dark .el-tabs__active-bar {
+  background-color: #409eff;
+}
+
+html.dark .el-pagination .el-pager li {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+html.dark .el-pagination .el-pager li.is-active {
+  background: rgba(64, 158, 255, 0.25);
+  color: #fff;
+}
+
+html.dark .el-empty__description {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+html.dark .el-descriptions__label {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+html.dark .el-descriptions__content {
+  color: rgba(255, 255, 255, 0.92);
+}
