@@ -79,10 +79,10 @@ npm run dev
 
 ### 4. 导入示例对照品库
 
-启动后端后，示例类别会自动创建。可通过页面“药品库 → 导入”上传 `samples/enterprise/drug_library_sedatives.json`：
+启动后端后，示例类别会自动创建。可通过页面“药品库 → 导入”上传 `samples/enterprise/drug_library_comprehensive.json`：
 
 ```bash
-# 页面导入：药品库 → 导入 → 选择 samples/enterprise/drug_library_sedatives.json
+# 页面导入：药品库 → 导入 → 选择 samples/enterprise/drug_library_comprehensive.json
 ```
 
 > 对照品库 JSON 支持 `rt`/`rrt`、`lambda1`/`lambda2` 以及 `a245`/`a250`/`a255`/`a260` 四个波长峰面积常数，导入时会同时创建药物、参考峰、面积常数和默认模型参数。
@@ -93,14 +93,10 @@ npm run dev
 
 | 文件 | 说明 |
 |------|------|
-| `drug_library_sedatives.json` | 安神镇定类 9 种对照品库（基于用户提供的真实参考数据） |
-| `drug_library_enterprise.json` | 多类别合成库，含 6 个类别共 39 种药物 |
-| `cascade_test_all_9.json` | 安神镇定类 9 种药物的级联检测输入参数 |
-| `cascade_test_enterprise.json` | 6 个类别共 39 种药物的级联检测输入参数 |
+| `drug_library_comprehensive.json` | **全面对照品库**，6 个类别共 34 种药物 |
+| `cascade_test_samples.json` | **级联检测样例**，7 组跨类别手动录入参数 |
 | `chromatogram_sedatives.csv` | 安神镇定类 9 个峰模拟色谱图 |
-| `chromatogram_weight_loss.csv` | 减肥类 6 个峰模拟色谱图 |
-| `chromatogram_diabetes.csv` | 降糖类 6 个峰模拟色谱图 |
-| `chromatogram_mixed.csv` | 混合 12 个峰模拟色谱图 |
+| `chromatogram_mixed.csv` | 4 个类别混合 8 个峰模拟色谱图 |
 
 ## 检测流程
 

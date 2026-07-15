@@ -1,0 +1,110 @@
+{
+  "description": "级联检测手动录入样例（合成测试数据，仅供系统流程验证）",
+  "thresholds": {
+    "rrtTolerance": 0.03,
+    "lambdaTolerance": 2.0,
+    "r1Tolerance": 0.15,
+    "r2Tolerance": 0.15,
+    "r3Tolerance": 0.15
+  },
+  "samples": [
+    {
+      "category": "安神镇定类",
+      "referenceDrug": "盐酸氯丙嗪",
+      "expectedDrug": "苯巴比妥",
+      "tx": 10.821,
+      "lambda1": 222.7,
+      "lambda2": null,
+      "areas": {
+        "245": 1441107,
+        "250": 983841,
+        "255": 729551,
+        "260": 626377
+      }
+    },
+    {
+      "category": "安神镇定类",
+      "referenceDrug": "盐酸氯丙嗪",
+      "expectedDrug": "地西泮",
+      "tx": 24.133,
+      "lambda1": 231.0,
+      "lambda2": 360.1,
+      "areas": {
+        "245": 3087279,
+        "250": 2673562,
+        "255": 2175960,
+        "260": 1720816
+      }
+    },
+    {
+      "category": "减肥类",
+      "referenceDrug": "西布曲明",
+      "expectedDrug": "酚酞",
+      "tx": 6.2,
+      "lambda1": 250.0,
+      "lambda2": null,
+      "areas": {
+        "245": 526964.15,
+        "250": 564218.96,
+        "255": 541998.89,
+        "260": 439120.33
+      }
+    },
+    {
+      "category": "降糖类",
+      "referenceDrug": "格列本脲",
+      "expectedDrug": "二甲双胍",
+      "tx": 5.6,
+      "lambda1": 235.0,
+      "lambda2": null,
+      "areas": {
+        "245": 2671546.73,
+        "250": 1967859.76,
+        "255": 2131353.48,
+        "260": 1967521.29
+      }
+    },
+    {
+      "category": "降压类",
+      "referenceDrug": "硝苯地平",
+      "expectedDrug": "氨氯地平",
+      "tx": 12.5,
+      "lambda1": 242.0,
+      "lambda2": null,
+      "areas": {
+        "245": 647185.18,
+        "250": 586316.71,
+        "255": 615684.14,
+        "260": 469102.03
+      }
+    },
+    {
+      "category": "降脂类",
+      "referenceDrug": "辛伐他汀",
+      "expectedDrug": "阿托伐他汀",
+      "tx": 14.2,
+      "lambda1": 249.0,
+      "lambda2": null,
+      "areas": {
+        "245": 1098000.99,
+        "250": 1171380.98,
+        "255": 1325479.66,
+        "260": 952725.15
+      }
+    },
+    {
+      "category": "抗感冒类",
+      "referenceDrug": "对乙酰氨基酚",
+      "expectedDrug": "布洛芬",
+      "tx": 9.3,
+      "lambda1": 252.0,
+      "lambda2": null,
+      "areas": {
+        "245": 1578202.26,
+        "250": 1218026.85,
+        "255": 1321286.29,
+        "260": 948744.26
+      }
+    }
+  ]
+}
