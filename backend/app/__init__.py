@@ -9,6 +9,7 @@ import os
 
 from flask import Flask, jsonify
 from sqlalchemy import inspect, text
+from sqlalchemy.exc import OperationalError
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 
@@ -75,7 +76,12 @@ def create_app(config_name: str = "development") -> Flask:
 
     # 创建所有数据库表（仅开发/测试环境方便使用；生产环境建议用 Flask-Migrate）
     with app.app_context():
-        db.create_all()
+        try:
+            db.create_all()
+        except OperationalError as e:
+            # Gunicorn 多 worker 同时启动可能出现表已存在的竞态，忽略即可
+            if "already exists" not in str(e).lower():
+                raise
         _migrate_operator_no()
         _init_seed_data()
 
