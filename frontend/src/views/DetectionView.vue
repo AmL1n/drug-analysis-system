@@ -332,9 +332,10 @@
                   </el-col>
                 </el-row>
 
+                <div class="area-section-title">不同波长下峰面积（A245 / A250 / A255 / A260）</div>
                 <el-row :gutter="12">
                   <el-col :span="12">
-                    <el-form-item label="A245">
+                    <el-form-item label="A245 峰面积">
                       <el-input-number
                         v-model="cascadeForm.areas['245']"
                         :min="1"
@@ -344,7 +345,7 @@
                     </el-form-item>
                   </el-col>
                   <el-col :span="12">
-                    <el-form-item label="A250">
+                    <el-form-item label="A250 峰面积">
                       <el-input-number
                         v-model="cascadeForm.areas['250']"
                         :min="1"
@@ -354,7 +355,7 @@
                     </el-form-item>
                   </el-col>
                   <el-col :span="12">
-                    <el-form-item label="A255">
+                    <el-form-item label="A255 峰面积">
                       <el-input-number
                         v-model="cascadeForm.areas['255']"
                         :min="1"
@@ -364,7 +365,7 @@
                     </el-form-item>
                   </el-col>
                   <el-col :span="12">
-                    <el-form-item label="A260">
+                    <el-form-item label="A260 峰面积">
                       <el-input-number
                         v-model="cascadeForm.areas['260']"
                         :min="1"
@@ -1408,6 +1409,13 @@ onBeforeUnmount(() => {
   :deep(.el-collapse-item__arrow) {
     color: rgba(255, 255, 255, 0.7);
   }
+}
+
+.area-section-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 8px 0 12px;
 }
 
 .cascade-result {
