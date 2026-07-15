@@ -181,10 +181,22 @@
                   </GlassButton>
                 </div>
 
-                <h3 class="section-title">Top 候选药物</h3>
+                <div class="result-table-header">
+                  <h3 class="section-title">Top 候选药物</h3>
+                  <div class="filter-tip">
+                    <el-icon size="14"><InfoFilled /></el-icon>
+                    <span>置信度低于 20% 的结果已隐藏</span>
+                    <el-tooltip
+                      content="置信度过低的候选结果参考价值有限，已自动过滤。可在上方「实验配置」中调整置信度阈值后重新检测。"
+                      placement="top"
+                    >
+                      <el-icon size="14" class="tip-icon"><InfoFilled /></el-icon>
+                    </el-tooltip>
+                  </div>
+                </div>
                 <el-table
-                  v-if="detectionResults.length > 0"
-                  :data="detectionResults"
+                  v-if="filteredDetectionResults.length > 0"
+                  :data="filteredDetectionResults"
                   border
                   stripe
                   highlight-current-row
@@ -222,7 +234,7 @@
                 </el-table>
 
                 <el-result
-                  v-if="detectionResults.length === 0"
+                  v-if="filteredDetectionResults.length === 0"
                   icon="info"
                   title="未匹配到候选药物"
                   sub-title="请确认样品数据质量或补充对照品库"
@@ -573,10 +585,10 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { UploadFile } from 'element-plus'
-import { ArrowDown, DataAnalysis, Document, UploadFilled } from '@element-plus/icons-vue'
+import { ArrowDown, DataAnalysis, Document, InfoFilled, UploadFilled } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import { uploadFile } from '@/api/file'
 import { createSample } from '@/api/sample'
@@ -611,6 +623,9 @@ const sampleId = ref<number | null>(null)
 const chromatogram = ref<ChromatogramData | null>(null)
 const chromatogramError = ref('')
 const detectionResults = ref<DetectionResultItem[]>([])
+const filteredDetectionResults = computed(() =>
+  detectionResults.value.filter((item) => item.confidence >= 0.2),
+)
 const selectedDrug = ref<DetectionResultItem | null>(null)
 const chartRef = ref<HTMLDivElement | null>(null)
 const uploadRef = ref<any>(null)
@@ -863,8 +878,8 @@ async function handleDetect() {
       try {
         const resultsRes = await getDetectionResults(sampleId.value)
         detectionResults.value = resultsRes.data
-        if (detectionResults.value.length > 0) {
-          selectedDrug.value = detectionResults.value[0]
+        if (filteredDetectionResults.value.length > 0) {
+          selectedDrug.value = filteredDetectionResults.value[0]
         }
       } catch (error) {
         console.error('加载检测结果失败:', error)
@@ -1323,9 +1338,42 @@ onBeforeUnmount(() => {
   font-size: 16px;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.92);
-  margin-bottom: 16px;
+  margin-bottom: 0;
   padding-bottom: 8px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  flex: 1;
+}
+
+.result-table-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.filter-tip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.55);
+  white-space: nowrap;
+
+  .tip-icon {
+    cursor: help;
+    color: rgba(64, 158, 255, 0.8);
+  }
+}
+
+/* 修复 stripe 背景覆盖 current-row 高亮 */
+:deep(.el-table__body tr.current-row > td.el-table__cell) {
+  background-color: rgba(64, 158, 255, 0.22) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+:deep(.el-table__body tr.current-row > td.el-table__cell .cell) {
+  color: rgba(255, 255, 255, 0.95) !important;
 }
 
 .chart-card {
