@@ -8,8 +8,13 @@
 |---|---|
 | `drug_library_comprehensive.json` | **全面对照品库**，含 6 个类别共 34 种药物（安神镇定类 9 种为真实参考数据，其余为合成数据） |
 | `cascade_test_samples.json` | **级联检测手动录入样例**，含 7 组跨类别测试数据 |
-| `chromatogram_sedatives.csv` | **安神镇定类色谱图样本**，含 9 个峰 |
-| `chromatogram_mixed.csv` | **混合类别色谱图样本**，含 8 个峰（4 个类别各 2 个） |
+| `chromatogram_phenobarbital.csv` | **苯巴比妥**单峰色谱图，用于文件上传自动检测 |
+| `chromatogram_chlorpromazine.csv` | **盐酸氯丙嗪**单峰色谱图，用于文件上传自动检测 |
+| `chromatogram_diazepam.csv` | **地西泮**单峰色谱图，用于文件上传自动检测 |
+| `chromatogram_metformin.csv` | **二甲双胍**单峰色谱图，用于文件上传自动检测 |
+| `chromatogram_sibutramine.csv` | **西布曲明**单峰色谱图，用于文件上传自动检测 |
+| `chromatogram_sedatives.csv` | **安神镇定类混合**色谱图样本，含 9 个峰 |
+| `chromatogram_mixed.csv` | **跨类别混合**色谱图样本，含 5 个峰（5 个类别各 1 个） |
 
 ## 药物类别与数量
 
@@ -29,8 +34,8 @@
 
 1. 登录系统
 2. 进入「对照品库」
-3. 点击「导入」
-4. 选择 `drug_library_comprehensive.json`
+3. 拖拽或点击选择 `drug_library_comprehensive.json`
+4. 点击「导入药物列表」
 5. 等待导入完成
 
 ### 2. 级联检测手动录入
@@ -62,7 +67,18 @@
 ### 3. 文件上传自动检测
 
 1. 进入「检测分析」→「文件上传检测」
-2. 上传 `chromatogram_sedatives.csv` 或 `chromatogram_mixed.csv`
-3. 查看自动识别结果
+2. 上传 `chromatogram_phenobarbital.csv`、`chromatogram_chlorpromazine.csv` 等单峰色谱图
+3. 置信度阈值保持默认 **0.7** 即可看到检出结果
+4. 查看自动识别结果
 
-> 注意：「文件上传检测」当前仍使用旧版融合模型，对企业版多峰色谱图可能给出较低综合评分。如需按级联 SOP 判定，请使用「级联检测 / 手动录入」。
+| 测试文件 | 期望检出 |
+|---|---|
+| `chromatogram_phenobarbital.csv` | 苯巴比妥 |
+| `chromatogram_chlorpromazine.csv` | 盐酸氯丙嗪 |
+| `chromatogram_diazepam.csv` | 地西泮 |
+| `chromatogram_metformin.csv` | 二甲双胍 |
+| `chromatogram_sibutramine.csv` | 西布曲明 |
+| `chromatogram_mixed.csv` | 盐酸氯丙嗪（混合样排名第一） |
+| `chromatogram_sedatives.csv` | 地西泮（混合样排名第一，阈值 0.7 可能未检出，可降至 0.5 查看） |
+
+> 注意：当前文件上传检测仍使用旧版融合模型，对单峰、干净色谱图检出效果最好。多峰混合样本可能出现排名第一但置信度略低于 0.7 的情况，此时可手动降低阈值或改用「级联检测 / 手动录入」进行 SOP 级判定。

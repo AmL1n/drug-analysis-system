@@ -38,6 +38,7 @@
 
           <div class="import-section">
             <el-upload
+              ref="libraryUploadRef"
               drag
               action="#"
               :auto-upload="false"
@@ -378,6 +379,7 @@ const spectrumPagination = reactive({
 
 const libraryImportCategoryId = ref<number | undefined>(undefined)
 const libraryImportFile = ref<File | null>(null)
+const libraryUploadRef = ref<any>(null)
 const libraryImporting = ref(false)
 const libraryImportSuccess = ref(false)
 const libraryImportMessage = ref('')
@@ -610,6 +612,9 @@ async function handleImportLibraryDrugs() {
       `导入完成：新建 ${created} 条，更新 ${updated} 条` +
       (libraryImportFailed.value.length > 0 ? `，失败 ${libraryImportFailed.value.length} 条` : '')
     ElMessage.success('药物列表导入成功')
+    // 清空上传组件，避免文件残留
+    libraryUploadRef.value?.clearFiles()
+    libraryImportFile.value = null
     loadDrugs()
   } catch (error) {
     libraryImportSuccess.value = false

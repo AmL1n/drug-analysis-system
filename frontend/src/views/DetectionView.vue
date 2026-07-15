@@ -613,6 +613,7 @@ const chromatogramError = ref('')
 const detectionResults = ref<DetectionResultItem[]>([])
 const selectedDrug = ref<DetectionResultItem | null>(null)
 const chartRef = ref<HTMLDivElement | null>(null)
+const uploadRef = ref<any>(null)
 let chartInstance: echarts.ECharts | null = null
 let resizeObserver: ResizeObserver | null = null
 
@@ -850,6 +851,12 @@ async function handleDetect() {
     result.value = detectRes.data
     currentStep.value = 4
     ElMessage.success('检测完成')
+
+    // 清空上传组件，避免文件残留
+    uploadRef.value?.clearFiles()
+    selectedFile.value = null
+    sampleName.value = ''
+    instrumentBrand.value = ''
 
     if (sampleId.value) {
       // 先获取检测结果，确保即使色谱图接口失败也能看到检测结论
