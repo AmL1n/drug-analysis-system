@@ -21,7 +21,7 @@ services:
         # SQLAlchemy 中 SQLite 绝对路径需要 4 个斜杠：sqlite:////<绝对路径>
         value: sqlite:////app/data/drug_check.db
       - key: CORS_ORIGINS
-        value: https://drug-analysis-frontend.onrender.com
+        value: https://drug-analysis-frontend-23n3.onrender.com
       - key: JWT_SECRET_KEY
         generateValue: true
       - key: SECRET_KEY
@@ -40,9 +40,10 @@ services:
         value: /api
     routes:
       # API 请求代理到后端服务（* 保留原路径）
+      # 注意：Render 可能给服务名加后缀，这里使用实际后端地址
       - type: rewrite
         source: /api/*
-        destination: https://drug-analysis-backend.onrender.com/api/*
+        destination: https://drug-analysis-backend-66uu.onrender.com/api/*
       # Vue Router 的 SPA fallback
       - type: rewrite
         source: /*
