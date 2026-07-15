@@ -9,7 +9,7 @@ import os
 
 from flask import Flask, jsonify
 from sqlalchemy import inspect, text
-from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import IntegrityError, OperationalError
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 
@@ -191,61 +191,66 @@ def _init_seed_data() -> None:
     初始化种子数据。
 
     仅在角色表为空时执行，避免重复插入。
+    多 worker 并发启动时可能因唯一键冲突报错，直接回滚即可。
     """
     from app.model import DrugCategory, Role, User, db
     from app.utils.security import hash_password
 
-    # 初始化角色
-    if not Role.query.first():
-        admin_role = Role(name="admin", description="系统管理员")
-        operator_role = Role(name="operator", description="操作员")
-        db.session.add_all([admin_role, operator_role])
-        db.session.commit()
+    try:
+        # 初始化角色
+        if not Role.query.first():
+            admin_role = Role(name="admin", description="系统管理员")
+            operator_role = Role(name="operator", description="操作员")
+            db.session.add_all([admin_role, operator_role])
+            db.session.commit()
 
-    # 初始化管理员用户
-    if not User.query.filter_by(username="admin").first():
-        admin_role = Role.query.filter_by(name="admin").first()
-        operator_role = Role.query.filter_by(name="operator").first()
+        # 初始化管理员用户
+        if not User.query.filter_by(username="admin").first():
+            admin_role = Role.query.filter_by(name="admin").first()
+            operator_role = Role.query.filter_by(name="operator").first()
 
-        admin_user = User(
-            username="admin",
-            password_hash=hash_password("admin123"),
-            real_name="系统管理员",
-            email="admin@example.com",
-            operator_no="OP-000001",
-            is_active=True,
-        )
-        operator_user = User(
-            username="operator",
-            password_hash=hash_password("admin123"),
-            real_name="操作员",
-            email="operator@example.com",
-            operator_no="OP-000002",
-            is_active=True,
-        )
+            admin_user = User(
+                username="admin",
+                password_hash=hash_password("admin123"),
+                real_name="系统管理员",
+                email="admin@example.com",
+                operator_no="OP-000001",
+                is_active=True,
+            )
+            operator_user = User(
+                username="operator",
+                password_hash=hash_password("admin123"),
+                real_name="操作员",
+                email="operator@example.com",
+                operator_no="OP-000002",
+                is_active=True,
+            )
 
-        if admin_role:
-            admin_user.roles.append(admin_role)
-        if operator_role:
-            operator_user.roles.append(operator_role)
+            if admin_role:
+                admin_user.roles.append(admin_role)
+            if operator_role:
+                operator_user.roles.append(operator_role)
 
-        db.session.add_all([admin_user, operator_user])
-        db.session.commit()
+            db.session.add_all([admin_user, operator_user])
+            db.session.commit()
 
-    # 初始化药物类别（与《数据库六种表结构》对齐）
-    if not DrugCategory.query.first():
-        categories = [
-            DrugCategory(name="安神镇定类", code=1, description="镇静催眠类药物", wavelengths=[245, 250, 255, 260], sort_order=1),
-            DrugCategory(name="减肥类", code=2, description="减肥类药物", wavelengths=[245, 248, 250, 254], sort_order=2),
-            DrugCategory(name="降糖类", code=3, description="降糖类药物", wavelengths=[], sort_order=3),
-            DrugCategory(name="降压类", code=4, description="降压类药物", wavelengths=[], sort_order=4),
-            DrugCategory(name="降脂类", code=5, description="降脂类药物", wavelengths=[], sort_order=5),
-            DrugCategory(name="抗感冒类", code=6, description="抗感冒类药物", wavelengths=[], sort_order=6),
-            DrugCategory(name="消肿止痛抗风湿类", code=7, description="消肿止痛抗风湿类药物", wavelengths=[], sort_order=7),
-            DrugCategory(name="止咳平喘类", code=8, description="止咳平喘类药物", wavelengths=[], sort_order=8),
-        ]
-        db.session.add_all(categories)
-        db.session.commit()
+        # 初始化药物类别（与《数据库六种表结构》对齐）
+        if not DrugCategory.query.first():
+            categories = [
+                DrugCategory(name="安神镇定类", code=1, description="镇静催眠类药物", wavelengths=[245, 250, 255, 260], sort_order=1),
+                DrugCategory(name="减肥类", code=2, description="减肥类药物", wavelengths=[245, 248, 250, 254], sort_order=2),
+                DrugCategory(name="降糖类", code=3, description="降糖类药物", wavelengths=[], sort_order=3),
+                DrugCategory(name="降压类", code=4, description="降压类药物", wavelengths=[], sort_order=4),
+                DrugCategory(name="降脂类", code=5, description="降脂类药物", wavelengths=[], sort_order=5),
+                DrugCategory(name="抗感冒类", code=6, description="抗感冒类药物", wavelengths=[], sort_order=6),
+                DrugCategory(name="消肿止痛抗风湿类", code=7, description="消肿止痛抗风湿类药物", wavelengths=[], sort_order=7),
+                DrugCategory(name="止咳平喘类", code=8, description="止咳平喘类药物", wavelengths=[], sort_order=8),
+            ]
+            db.session.add_all(categories)
+            db.session.commit()
+    except IntegrityError:
+        # 多 worker 并发启动时可能出现唯一键冲突，说明其他 worker 已插入种子数据
+        db.session.rollback()
 
 
 def _migrate_operator_no() -> None:
