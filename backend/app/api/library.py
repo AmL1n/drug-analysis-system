@@ -11,11 +11,14 @@ from app.service.library_import_service import import_library_from_json
 from app.service.library_service import (
     delete_drug,
     delete_drugs,
+    get_category_reference_drug,
     get_drug_detail,
     list_categories,
     list_drugs,
     list_peaks,
+    list_reference_drugs,
     list_spectra,
+    set_category_reference_drug,
 )
 from app.service.log_service import log_operation
 from app.utils.pagination import get_pagination_params
@@ -30,6 +33,46 @@ def list_categories_view():
     """获取药物类别列表。"""
     categories = list_categories()
     return success(data=categories)
+
+
+@library_bp.route("/library/categories/<int:category_id>/reference-drugs", methods=["GET"])
+@jwt_required()
+def list_reference_drugs_view(category_id: int):
+    """获取类别下可作为参照物的药物列表。"""
+    drugs = list_reference_drugs(category_id)
+    return success(data=drugs, msg="ok")
+
+
+@library_bp.route("/library/categories/<int:category_id>/reference-drug", methods=["GET"])
+@jwt_required()
+def get_category_reference_drug_view(category_id: int):
+    """获取类别当前默认参照药物。"""
+    drug = get_category_reference_drug(category_id)
+    return success(data=drug, msg="ok")
+
+
+@library_bp.route("/library/categories/<int:category_id>/reference-drug", methods=["PUT"])
+@jwt_required()
+def set_category_reference_drug_view(category_id: int):
+    """设置类别默认参照药物。"""
+    data = request.get_json(silent=True) or {}
+    reference_drug_id = data.get("referenceDrugId")
+    if reference_drug_id is None:
+        raise ParamValidationException("referenceDrugId 不能为空")
+    try:
+        reference_drug_id = int(reference_drug_id)
+    except (ValueError, TypeError):
+        raise ParamValidationException("referenceDrugId 必须为整数")
+
+    result = set_category_reference_drug(category_id, reference_drug_id)
+    log_operation(
+        action="设置类别参照药物",
+        module="library",
+        target_type="drug_category",
+        target_id=category_id,
+        detail=result,
+    )
+    return success(data=result, msg="ok")
 
 
 @library_bp.route("/library/drugs", methods=["GET"])

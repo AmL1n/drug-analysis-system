@@ -12,7 +12,8 @@ from app.dao.library_dao import (
     ReferencePeakDAO,
     ReferenceSpectrumDAO,
 )
-from app.errors.exceptions import NotFoundException
+from app.errors.exceptions import NotFoundException, ParamValidationException
+from app.model import Drug, DrugCategory, ReferencePeak, db
 
 
 def _serialize_decimal(value):
@@ -135,19 +136,6 @@ def get_drug_detail(drug_id: int) -> dict:
     if drug is None:
         raise NotFoundException("药物不存在")
 
-
-def delete_drug(drug_id: int) -> None:
-    """删除单个药物。"""
-    drug = DrugDAO.get_by_id(drug_id)
-    if drug is None:
-        raise NotFoundException("药物不存在")
-    DrugDAO.delete(drug)
-
-
-def delete_drugs(drug_ids: List[int]) -> int:
-    """批量删除药物，返回删除数量。"""
-    return DrugDAO.delete_by_ids(drug_ids)
-
     peaks = ReferencePeakDAO.get_by_drug_id(drug_id)
     spectra = ReferenceSpectrumDAO.get_by_drug_id(drug_id)
     area_constants = DrugAreaConstantDAO.get_by_drug_id(drug_id)
@@ -161,6 +149,8 @@ def delete_drugs(drug_ids: List[int]) -> int:
         "description": drug.description,
         "peakCount": drug.peak_count,
         "status": drug.status,
+        "lambdaMax1": _serialize_decimal(drug.lambda_max_1),
+        "lambdaMax2": _serialize_decimal(drug.lambda_max_2),
         "peaks": [
             {
                 "id": p.id,
@@ -191,4 +181,93 @@ def delete_drugs(drug_ids: List[int]) -> int:
             }
             for ac in area_constants
         ],
+    }
+
+
+def delete_drug(drug_id: int) -> None:
+    """删除单个药物。"""
+    drug = DrugDAO.get_by_id(drug_id)
+    if drug is None:
+        raise NotFoundException("药物不存在")
+    DrugDAO.delete(drug)
+
+
+def delete_drugs(drug_ids: List[int]) -> int:
+    """批量删除药物，返回删除数量。"""
+    return DrugDAO.delete_by_ids(drug_ids)
+
+
+def list_reference_drugs(category_id: int) -> List[dict]:
+    """获取指定类别下可作为参照物的药物列表（启用且存在参考峰）。"""
+    category = db.session.get(DrugCategory, category_id)
+    if category is None:
+        raise NotFoundException("药物类别不存在")
+
+    drugs = (
+        Drug.query.filter_by(category_id=category_id, status=1)
+        .join(ReferencePeak, ReferencePeak.drug_id == Drug.id)
+        .order_by(Drug.name)
+        .all()
+    )
+
+    return [
+        {
+            "id": drug.id,
+            "name": drug.name,
+            "retentionTime": _serialize_decimal(
+                ReferencePeak.query.filter_by(drug_id=drug.id)
+                .order_by(ReferencePeak.peak_index)
+                .first()
+                .retention_time
+            ),
+        }
+        for drug in drugs
+    ]
+
+
+def get_category_reference_drug(category_id: int) -> Optional[dict]:
+    """获取指定类别当前默认参照药物。"""
+    category = db.session.get(DrugCategory, category_id)
+    if category is None:
+        raise NotFoundException("药物类别不存在")
+
+    drug = category.reference_drug
+    if drug is None:
+        return None
+
+    return {
+        "id": drug.id,
+        "name": drug.name,
+        "retentionTime": _serialize_decimal(
+            ReferencePeak.query.filter_by(drug_id=drug.id)
+            .order_by(ReferencePeak.peak_index)
+            .first()
+            .retention_time
+        ),
+    }
+
+
+def set_category_reference_drug(category_id: int, reference_drug_id: int) -> dict:
+    """设置指定类别的默认参照药物。"""
+    category = db.session.get(DrugCategory, category_id)
+    if category is None:
+        raise NotFoundException("药物类别不存在")
+
+    drug = db.session.get(Drug, reference_drug_id)
+    if drug is None:
+        raise NotFoundException("参照药物不存在")
+    if drug.category_id != category_id:
+        raise ParamValidationException("参照药物不属于当前类别")
+    if drug.status != 1:
+        raise ParamValidationException("参照药物已被禁用")
+    if not ReferencePeak.query.filter_by(drug_id=drug.id).first():
+        raise ParamValidationException("参照药物缺少参考峰信息")
+
+    category.reference_drug_id = drug.id
+    db.session.commit()
+
+    return {
+        "id": category.id,
+        "referenceDrugId": category.reference_drug_id,
+        "referenceDrugName": drug.name,
     }

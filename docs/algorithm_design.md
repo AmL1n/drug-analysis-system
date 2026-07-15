@@ -294,6 +294,64 @@ final_score = Σ(weight_i · score_i) / Σ(weight_i)
     返回 ECharts 所需的 category/series 结构
 ```
 
+### 4.5 三步级联检测（企业版）
+
+针对已知主峰保留时间、UV 最大吸收波长和 4 波长峰面积的手动录入场景，提供“RRT → UV λmax → 峰面积比”级联检测：
+
+```
+级联检测(category_id, reference_drug_id, tx, lambda1, lambda2, areas, thresholds):
+    reference_peak = 查询参照药物主峰 retention_time
+    ts = reference_peak.retention_time
+    rrt_sample = tx / ts
+
+    # Step 1: RRT 初筛
+    step1 = []
+    for drug in category_drugs:
+        rrt_db = drug.main_peak.relative_retention_time 或 retention_time / ts
+        if |rrt_db - rrt_sample| <= thresholds.rrtTolerance:
+            step1.append(drug)
+
+    # Step 2: UV λmax 复筛
+    step2 = []
+    if lambda1 is not None:
+        for drug in step1:
+            if |lambda1 - drug.lambda_max_1| <= thresholds.lambdaTolerance:
+                if drug.lambda_max_2 存在且 lambda2 提供:
+                    需同时满足 |lambda2 - drug.lambda_max_2| <= thresholds.lambdaTolerance
+                step2.append(drug)
+    else:
+        step2 = step1
+
+    # Step 3: 峰面积比最终定性
+    r1 = areas[245] / areas[250]
+    r2 = areas[255] / areas[250]
+    r3 = areas[260] / areas[250]
+
+    step3 = []
+    for drug in step2:
+        constants = 查询 drug 在 245/250/255/260 的面积常数
+        r1_db = constants[245] / constants[250]
+        r2_db = constants[255] / constants[250]
+        r3_db = constants[260] / constants[250]
+
+        score1 = 1 - min(1, |r1 - r1_db| / thresholds.r1Tolerance)
+        score2 = 1 - min(1, |r2 - r2_db| / thresholds.r2Tolerance)
+        score3 = 1 - min(1, |r3 - r3_db| / thresholds.r3Tolerance)
+        final_score = (score1 + score2 + score3) / 3
+
+        step3.append({drug, r1_db, r2_db, r3_db, final_score})
+
+    return step3 按 final_score 降序
+```
+
+默认阈值：
+
+| 参数 | 默认值 | 说明 |
+|---|---|---|
+| `rrtTolerance` | 0.03 | RRT 绝对偏差容差 |
+| `lambdaTolerance` | 2.0 nm | UV 波长偏差容差 |
+| `r1Tolerance` / `r2Tolerance` / `r3Tolerance` | 0.1 | 峰面积比相对偏差容差 |
+
 ---
 
 ## 5. 伪代码
@@ -606,9 +664,11 @@ def update_uv_model(drug_id: int, x: np.ndarray):
 
 | 接口 | 输入 | 输出 | 说明 |
 |---|---|---|---|
-| `POST /api/detect/single` | `{category_id, reference_rt, peaks: [...]}` | 单峰候选列表 | 单样品即时检测 |
-| `POST /api/detect/tasks` | `multipart/form-data` 文件列表 + category_id | `task_id`、汇总报告 | 多药物批量检测入口 |
+| `POST /api/detect` | `{sampleId, modelType, topN, confidenceThreshold, ...}` | 单样本检测结果 | 文件上传后自动检测 |
+| `POST /api/detect/batch` | `{sampleIds, name}` | 任务信息 | 批量检测任务 |
 | `GET /api/detect/tasks/{id}` | task_id | 完整结果 | 查询批次 |
+| `POST /api/detect/cascade` | `{categoryId, referenceDrugId, tx, lambda1, lambda2, areas, thresholds, topN}` | Step1/2/3 级联结果 | 企业版三步级联检测（RRT → UV λmax → 峰面积比） |
+| `GET /api/detect/results/{sample_id}` | sample_id | 检测明细 | 含参考峰叠加数据 |
 | `GET /api/charts/rt_histogram` | task_id, bin_width? | bins / counts / ref_lines | 保留时间对比 |
 | `GET /api/charts/spectrum_overlay` | task_id, drug_name | wavelengths / ref / sample_avg / curves | 峰面积/光谱叠加 |
 | `GET /api/charts/probability` | task_id | 每峰 topN 概率 | 概率柱状图 |

@@ -69,6 +69,13 @@ class Drug(db.Model):
     cas = db.Column(db.String(50), default=None, comment="CAS号")
     molecular_formula = db.Column(db.String(100), default=None, comment="分子式")
     description = db.Column(db.Text, default=None, comment="药物描述")
+    # 最大吸收波长（级联检测使用）
+    lambda_max_1 = db.Column(
+        db.Numeric(8, 2), default=None, comment="最大吸收波长1(nm)"
+    )
+    lambda_max_2 = db.Column(
+        db.Numeric(8, 2), default=None, comment="最大吸收波长2(nm)"
+    )
     # 色谱峰个数
     peak_count = db.Column(db.Integer, default=0, comment="色谱峰个数")
     status = db.Column(db.SmallInteger, default=1, comment="状态：0禁用 1启用")

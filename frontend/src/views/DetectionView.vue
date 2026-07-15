@@ -85,179 +85,494 @@
       </el-collapse-transition>
     </GlassCard>
 
-    <el-row :gutter="20" class="main-row">
-      <el-col :xs="24" :md="8">
-        <GlassCard class="upload-card" :tilt="false">
-          <template #header>
-            <span class="card-header-title">上传样品数据</span>
-          </template>
+    <el-tabs v-model="activeTab" type="border-card" class="detect-tabs">
+      <el-tab-pane label="文件上传检测" name="file">
+        <el-row :gutter="20" class="main-row">
+          <el-col :xs="24" :md="8">
+            <GlassCard class="upload-card" :tilt="false">
+              <template #header>
+                <span class="card-header-title">上传样品数据</span>
+              </template>
 
-          <el-upload
-            ref="uploadRef"
-            drag
-            action="#"
-            :auto-upload="false"
-            :limit="1"
-            :on-change="handleFileChange"
-            :on-remove="handleFileRemove"
-            accept=".txt,.csv,.xlsx,.xls"
-            class="upload-area"
-          >
-            <el-icon class="el-icon--upload" size="48"><upload-filled /></el-icon>
-            <div class="el-upload__text">
-              将文件拖到此处，或 <em>点击上传</em>
-            </div>
-            <template #tip>
-              <div class="el-upload__tip">
-                支持 TXT / CSV / Excel 格式，单个文件不超过 50MB
+              <el-upload
+                ref="uploadRef"
+                drag
+                action="#"
+                :auto-upload="false"
+                :limit="1"
+                :on-change="handleFileChange"
+                :on-remove="handleFileRemove"
+                accept=".txt,.csv,.xlsx,.xls"
+                class="upload-area"
+              >
+                <el-icon class="el-icon--upload" size="48"><upload-filled /></el-icon>
+                <div class="el-upload__text">
+                  将文件拖到此处，或 <em>点击上传</em>
+                </div>
+                <template #tip>
+                  <div class="el-upload__tip">
+                    支持 TXT / CSV / Excel 格式，单个文件不超过 50MB
+                  </div>
+                </template>
+              </el-upload>
+
+              <el-form label-position="top" class="sample-form">
+                <el-form-item label="样品名称">
+                  <el-input v-model="sampleName" placeholder="请输入样品名称" />
+                </el-form-item>
+                <el-form-item label="仪器品牌">
+                  <el-select v-model="instrumentBrand" placeholder="请选择仪器品牌" style="width: 100%">
+                    <el-option label="Agilent" value="Agilent" />
+                    <el-option label="Waters" value="Waters" />
+                    <el-option label="Shimadzu" value="Shimadzu" />
+                    <el-option label="其它" value="Other" />
+                  </el-select>
+                </el-form-item>
+              </el-form>
+
+              <GlassButton
+                primary
+                large
+                :loading="detecting"
+                :disabled="!selectedFile"
+                style="width: 100%"
+                @click="handleDetect"
+              >
+                {{ detecting ? '检测中...' : '开始检测' }}
+              </GlassButton>
+            </GlassCard>
+          </el-col>
+
+          <el-col :xs="24" :md="16">
+            <GlassCard class="result-card" :tilt="false">
+              <template #header>
+                <span class="card-header-title">检测结果</span>
+              </template>
+
+              <el-empty v-if="!result" description="请先上传文件并点击开始检测">
+                <template #image>
+                  <el-icon size="64" color="rgba(255,255,255,0.25)"><DataAnalysis /></el-icon>
+                </template>
+              </el-empty>
+
+              <div v-else>
+                <div class="result-summary">
+                  <el-descriptions :column="2" border>
+                    <el-descriptions-item label="样品编号">{{ result.sample_no }}</el-descriptions-item>
+                    <el-descriptions-item label="样品名称">{{ result.sample_name || '-' }}</el-descriptions-item>
+                    <el-descriptions-item label="候选药物数">{{ result.summary.total_candidates }}</el-descriptions-item>
+                    <el-descriptions-item label="检出药物数">
+                      <el-tag :type="result.summary.detected_count > 0 ? 'danger' : 'success'">
+                        {{ result.summary.detected_count }}
+                      </el-tag>
+                    </el-descriptions-item>
+                    <el-descriptions-item label="检测时间">{{ formatChinaTime(result.detect_time) }}</el-descriptions-item>
+                  </el-descriptions>
+                </div>
+
+                <div class="result-actions">
+                  <GlassButton primary :icon="Document" @click="downloadReportFile('pdf')">
+                    <el-icon><Document /></el-icon>
+                    下载 PDF 报告
+                  </GlassButton>
+                  <GlassButton @click="downloadReportFile('excel')">
+                    <el-icon><Document /></el-icon>
+                    下载 Excel 报告
+                  </GlassButton>
+                </div>
+
+                <h3 class="section-title">Top 候选药物</h3>
+                <el-table
+                  v-if="detectionResults.length > 0"
+                  :data="detectionResults"
+                  border
+                  stripe
+                  highlight-current-row
+                  style="width: 100%"
+                  @current-change="handleDrugSelect"
+                >
+                  <el-table-column type="index" width="50" label="排名" />
+                  <el-table-column prop="drugName" label="药物名称" min-width="140" />
+                  <el-table-column prop="totalScore" label="综合评分" width="140">
+                    <template #default="{ row }">
+                      <el-progress
+                        :percentage="Math.round(row.totalScore * 100)"
+                        :color="scoreColor"
+                        :show-text="true"
+                      />
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="confidence" label="置信度" width="120">
+                    <template #default="{ row }">
+                      {{ (row.confidence * 100).toFixed(1) }}%
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="matchedPeakCount" label="匹配峰数" width="120">
+                    <template #default="{ row }">
+                      {{ row.matchedPeakCount }} / {{ row.totalPeakCount }}
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="状态" width="100">
+                    <template #default="{ row }">
+                      <el-tag :type="row.isDetected ? 'danger' : 'info'" size="small">
+                        {{ row.isDetected ? '检出' : '未检出' }}
+                      </el-tag>
+                    </template>
+                  </el-table-column>
+                </el-table>
+
+                <el-result
+                  v-if="detectionResults.length === 0"
+                  icon="info"
+                  title="未匹配到候选药物"
+                  sub-title="请确认样品数据质量或补充对照品库"
+                />
               </div>
-            </template>
-          </el-upload>
+            </GlassCard>
 
-          <el-form label-position="top" class="sample-form">
-            <el-form-item label="样品名称">
-              <el-input v-model="sampleName" placeholder="请输入样品名称" />
-            </el-form-item>
-            <el-form-item label="仪器品牌">
-              <el-select v-model="instrumentBrand" placeholder="请选择仪器品牌" style="width: 100%">
-                <el-option label="Agilent" value="Agilent" />
-                <el-option label="Waters" value="Waters" />
-                <el-option label="Shimadzu" value="Shimadzu" />
-                <el-option label="其它" value="Other" />
-              </el-select>
-            </el-form-item>
-          </el-form>
-
-          <GlassButton
-            primary
-            large
-            :loading="detecting"
-            :disabled="!selectedFile"
-            style="width: 100%"
-            @click="handleDetect"
-          >
-            {{ detecting ? '检测中...' : '开始检测' }}
-          </GlassButton>
-        </GlassCard>
-      </el-col>
-
-      <el-col :xs="24" :md="16">
-        <GlassCard class="result-card" :tilt="false">
-          <template #header>
-            <span class="card-header-title">检测结果</span>
-          </template>
-
-          <el-empty v-if="!result" description="请先上传文件并点击开始检测">
-            <template #image>
-              <el-icon size="64" color="rgba(255,255,255,0.25)"><DataAnalysis /></el-icon>
-            </template>
-          </el-empty>
-
-          <div v-else>
-            <div class="result-summary">
-              <el-descriptions :column="2" border>
-                <el-descriptions-item label="样品编号">{{ result.sample_no }}</el-descriptions-item>
-                <el-descriptions-item label="样品名称">{{ result.sample_name || '-' }}</el-descriptions-item>
-                <el-descriptions-item label="候选药物数">{{ result.summary.total_candidates }}</el-descriptions-item>
-                <el-descriptions-item label="检出药物数">
-                  <el-tag :type="result.summary.detected_count > 0 ? 'danger' : 'success'">
-                    {{ result.summary.detected_count }}
-                  </el-tag>
-                </el-descriptions-item>
-                <el-descriptions-item label="检测时间">{{ formatChinaTime(result.detect_time) }}</el-descriptions-item>
-              </el-descriptions>
-            </div>
-
-            <div class="result-actions">
-              <GlassButton primary :icon="Document" @click="downloadReportFile('pdf')">
-                <el-icon><Document /></el-icon>
-                下载 PDF 报告
-              </GlassButton>
-              <GlassButton @click="downloadReportFile('excel')">
-                <el-icon><Document /></el-icon>
-                下载 Excel 报告
-              </GlassButton>
-            </div>
-
-            <h3 class="section-title">Top 候选药物</h3>
-            <el-table
-              v-if="detectionResults.length > 0"
-              :data="detectionResults"
-              border
-              stripe
-              highlight-current-row
-              style="width: 100%"
-              @current-change="handleDrugSelect"
+            <GlassCard
+              v-if="result"
+              class="chart-card"
+              :tilt="false"
+              :halo="false"
+              :glare="false"
+              :rim="false"
             >
-              <el-table-column type="index" width="50" label="排名" />
-              <el-table-column prop="drugName" label="药物名称" min-width="140" />
-              <el-table-column prop="totalScore" label="综合评分" width="140">
-                <template #default="{ row }">
-                  <el-progress
-                    :percentage="Math.round(row.totalScore * 100)"
-                    :color="scoreColor"
-                    :show-text="true"
+              <template #header>
+                <div class="chart-header">
+                  <span class="card-header-title">峰值图对比</span>
+                  <span v-if="selectedDrug" class="chart-subtitle">
+                    当前对照：{{ selectedDrug.drugName }}
+                  </span>
+                </div>
+              </template>
+              <div ref="chartRef" class="chart-container" />
+              <el-empty
+                v-if="chromatogramError"
+                :description="chromatogramError"
+                class="chart-empty"
+              />
+            </GlassCard>
+          </el-col>
+        </el-row>
+      </el-tab-pane>
+
+      <el-tab-pane label="级联检测 / 手动录入" name="cascade">
+        <el-row :gutter="20" class="main-row">
+          <el-col :xs="24" :md="8">
+            <GlassCard class="upload-card" :tilt="false">
+              <template #header>
+                <span class="card-header-title">级联检测录入</span>
+              </template>
+
+              <el-form label-position="top" class="cascade-form">
+                <el-form-item label="药物类别">
+                  <el-select
+                    v-model="cascadeForm.categoryId"
+                    placeholder="请选择药物类别"
+                    style="width: 100%"
+                    @change="onCascadeCategoryChange"
+                  >
+                    <el-option
+                      v-for="cat in categories"
+                      :key="cat.id"
+                      :label="cat.name"
+                      :value="cat.id"
+                    />
+                  </el-select>
+                </el-form-item>
+
+                <el-form-item label="参照药物">
+                  <el-select
+                    v-model="cascadeForm.referenceDrugId"
+                    placeholder="请选择参照药物"
+                    style="width: 100%"
+                  >
+                    <el-option
+                      v-for="drug in referenceDrugs"
+                      :key="drug.id"
+                      :label="`${drug.name} (ts=${drug.retentionTime}min)`"
+                      :value="drug.id"
+                    />
+                  </el-select>
+                </el-form-item>
+
+                <el-form-item label="保留时间 tx (min)">
+                  <el-input-number
+                    v-model="cascadeForm.tx"
+                    :min="0.001"
+                    :step="0.001"
+                    :precision="3"
+                    style="width: 100%"
                   />
-                </template>
-              </el-table-column>
-              <el-table-column prop="confidence" label="置信度" width="120">
-                <template #default="{ row }">
-                  {{ (row.confidence * 100).toFixed(1) }}%
-                </template>
-              </el-table-column>
-              <el-table-column prop="matchedPeakCount" label="匹配峰数" width="120">
-                <template #default="{ row }">
-                  {{ row.matchedPeakCount }} / {{ row.totalPeakCount }}
-                </template>
-              </el-table-column>
-              <el-table-column label="状态" width="100">
-                <template #default="{ row }">
-                  <el-tag :type="row.isDetected ? 'danger' : 'info'" size="small">
-                    {{ row.isDetected ? '检出' : '未检出' }}
-                  </el-tag>
-                </template>
-              </el-table-column>
-            </el-table>
+                </el-form-item>
 
-            <el-result
-              v-if="detectionResults.length === 0"
-              icon="info"
-              title="未匹配到候选药物"
-              sub-title="请确认样品数据质量或补充对照品库"
-            />
-          </div>
-        </GlassCard>
+                <el-row :gutter="12">
+                  <el-col :span="12">
+                    <el-form-item label="λ1 (nm)">
+                      <el-input-number
+                        v-model="cascadeForm.lambda1"
+                        :min="0"
+                        :step="0.1"
+                        :precision="1"
+                        style="width: 100%"
+                      />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="12">
+                    <el-form-item label="λ2 (nm)">
+                      <el-input-number
+                        v-model="cascadeForm.lambda2"
+                        :min="0"
+                        :step="0.1"
+                        :precision="1"
+                        style="width: 100%"
+                      />
+                    </el-form-item>
+                  </el-col>
+                </el-row>
 
-        <GlassCard
-          v-if="result"
-          class="chart-card"
-          :tilt="false"
-          :halo="false"
-          :glare="false"
-          :rim="false"
-        >
-          <template #header>
-            <div class="chart-header">
-              <span class="card-header-title">峰值图对比</span>
-              <span v-if="selectedDrug" class="chart-subtitle">
-                当前对照：{{ selectedDrug.drugName }}
-              </span>
-            </div>
-          </template>
-          <div ref="chartRef" class="chart-container" />
-          <el-empty
-            v-if="chromatogramError"
-            :description="chromatogramError"
-            class="chart-empty"
-          />
-        </GlassCard>
-      </el-col>
-    </el-row>
+                <el-row :gutter="12">
+                  <el-col :span="12">
+                    <el-form-item label="A245">
+                      <el-input-number
+                        v-model="cascadeForm.areas['245']"
+                        :min="1"
+                        :step="1000"
+                        style="width: 100%"
+                      />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="12">
+                    <el-form-item label="A250">
+                      <el-input-number
+                        v-model="cascadeForm.areas['250']"
+                        :min="1"
+                        :step="1000"
+                        style="width: 100%"
+                      />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="12">
+                    <el-form-item label="A255">
+                      <el-input-number
+                        v-model="cascadeForm.areas['255']"
+                        :min="1"
+                        :step="1000"
+                        style="width: 100%"
+                      />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="12">
+                    <el-form-item label="A260">
+                      <el-input-number
+                        v-model="cascadeForm.areas['260']"
+                        :min="1"
+                        :step="1000"
+                        style="width: 100%"
+                      />
+                    </el-form-item>
+                  </el-col>
+                </el-row>
+
+                <el-collapse v-model="cascadeThresholdExpanded">
+                  <el-collapse-item title="阈值设定" name="thresholds">
+                    <el-form-item label="RRT 容差">
+                      <el-input-number
+                        v-model="cascadeForm.thresholds.rrtTolerance"
+                        :min="0.001"
+                        :step="0.001"
+                        :precision="3"
+                        style="width: 100%"
+                      />
+                    </el-form-item>
+                    <el-form-item label="Lambda 容差 (nm)">
+                      <el-input-number
+                        v-model="cascadeForm.thresholds.lambdaTolerance"
+                        :min="0.1"
+                        :step="0.1"
+                        :precision="1"
+                        style="width: 100%"
+                      />
+                    </el-form-item>
+                    <el-form-item label="R1 容差">
+                      <el-input-number
+                        v-model="cascadeForm.thresholds.r1Tolerance"
+                        :min="0.001"
+                        :step="0.01"
+                        :precision="3"
+                        style="width: 100%"
+                      />
+                    </el-form-item>
+                    <el-form-item label="R2 容差">
+                      <el-input-number
+                        v-model="cascadeForm.thresholds.r2Tolerance"
+                        :min="0.001"
+                        :step="0.01"
+                        :precision="3"
+                        style="width: 100%"
+                      />
+                    </el-form-item>
+                    <el-form-item label="R3 容差">
+                      <el-input-number
+                        v-model="cascadeForm.thresholds.r3Tolerance"
+                        :min="0.001"
+                        :step="0.01"
+                        :precision="3"
+                        style="width: 100%"
+                      />
+                    </el-form-item>
+                    <GlassButton
+                      style="width: 100%; margin-top: 8px"
+                      :loading="savingThresholds"
+                      @click="saveCascadeThresholds"
+                    >
+                      保存阈值
+                    </GlassButton>
+                  </el-collapse-item>
+                </el-collapse>
+              </el-form>
+
+              <GlassButton
+                primary
+                large
+                :loading="cascadeDetecting"
+                style="width: 100%; margin-top: 16px"
+                @click="handleCascadeDetect"
+              >
+                {{ cascadeDetecting ? '检测中...' : '开始级联检测' }}
+              </GlassButton>
+            </GlassCard>
+          </el-col>
+
+          <el-col :xs="24" :md="16">
+            <GlassCard class="result-card" :tilt="false">
+              <template #header>
+                <span class="card-header-title">级联检测结果</span>
+              </template>
+
+              <el-empty v-if="!cascadeResult" description="请录入参数并点击开始级联检测">
+                <template #image>
+                  <el-icon size="64" color="rgba(255,255,255,0.25)"><DataAnalysis /></el-icon>
+                </template>
+              </el-empty>
+
+              <div v-else class="cascade-result">
+                <div class="result-summary">
+                  <el-descriptions :column="2" border>
+                    <el-descriptions-item label="参照药物">
+                      {{ cascadeResult.referenceDrug.name }} (ts={{ cascadeResult.referenceDrug.retentionTime }}min)
+                    </el-descriptions-item>
+                    <el-descriptions-item label="样本 RRT">
+                      {{ cascadeResult.step1.rrtSample.toFixed(6) }}
+                    </el-descriptions-item>
+                  </el-descriptions>
+                </div>
+
+                <!-- Step 1 -->
+                <div class="step-section step-1">
+                  <div class="step-header">
+                    <el-tag type="primary" effect="dark" size="large">Step 1</el-tag>
+                    <span class="step-title">相对保留时间初筛</span>
+                    <span class="step-count">命中 {{ cascadeResult.step1.candidateCount }} 个</span>
+                  </div>
+                  <div class="step-meta">
+                    <span>rrtSample = tx / ts = {{ cascadeResult.step1.rrtSample.toFixed(6) }}</span>
+                    <span>容差：±{{ cascadeResult.step1.tolerance }}</span>
+                  </div>
+                  <el-table
+                    :data="cascadeResult.step1.candidates"
+                    border
+                    stripe
+                    size="small"
+                    style="width: 100%"
+                  >
+                    <el-table-column type="index" width="45" label="#" />
+                    <el-table-column prop="drugName" label="药物名称" min-width="140" />
+                    <el-table-column prop="rrtDb" label="库 RRT" width="120" />
+                    <el-table-column prop="delta" label="偏差" width="120" />
+                  </el-table>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="step-section step-2">
+                  <div class="step-header">
+                    <el-tag type="success" effect="dark" size="large">Step 2</el-tag>
+                    <span class="step-title">紫外最大吸收波长复筛</span>
+                    <span class="step-count">命中 {{ cascadeResult.step2.candidateCount }} 个</span>
+                  </div>
+                  <div class="step-meta">
+                    <span>λ1 = {{ cascadeResult.step2.lambda1 ?? '-' }} nm</span>
+                    <span>λ2 = {{ cascadeResult.step2.lambda2 ?? '-' }} nm</span>
+                    <span>容差：±{{ cascadeResult.step2.tolerance }} nm</span>
+                  </div>
+                  <el-table
+                    :data="cascadeResult.step2.candidates"
+                    border
+                    stripe
+                    size="small"
+                    style="width: 100%"
+                  >
+                    <el-table-column type="index" width="45" label="#" />
+                    <el-table-column prop="drugName" label="药物名称" min-width="140" />
+                    <el-table-column prop="rrtDb" label="库 RRT" width="120" />
+                    <el-table-column prop="delta" label="偏差" width="120" />
+                  </el-table>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="step-section step-3">
+                  <div class="step-header">
+                    <el-tag type="danger" effect="dark" size="large">Step 3</el-tag>
+                    <span class="step-title">峰面积常数最终定性</span>
+                  </div>
+                  <div class="step-meta">
+                    <span>样本 R1 = {{ cascadeResult.step3.r1.toFixed(6) }}</span>
+                    <span>样本 R2 = {{ cascadeResult.step3.r2.toFixed(6) }}</span>
+                    <span>样本 R3 = {{ cascadeResult.step3.r3.toFixed(6) }}</span>
+                  </div>
+                  <el-table
+                    :data="cascadeResult.step3.results"
+                    border
+                    stripe
+                    highlight-current-row
+                    size="small"
+                    style="width: 100%"
+                  >
+                    <el-table-column type="index" width="45" label="#" />
+                    <el-table-column prop="drugName" label="药物名称" min-width="140" />
+                    <el-table-column label="库 R1/R2/R3" min-width="160">
+                      <template #default="{ row }">
+                        {{ row.r1Db.toFixed(4) }} / {{ row.r2Db.toFixed(4) }} / {{ row.r3Db.toFixed(4) }}
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="偏差" min-width="140">
+                      <template #default="{ row }">
+                        {{ row.deltaR1.toFixed(4) }} / {{ row.deltaR2.toFixed(4) }} / {{ row.deltaR3.toFixed(4) }}
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="综合得分" width="120">
+                      <template #default="{ row }">
+                        <el-progress
+                          :percentage="Math.round(row.score * 100)"
+                          :color="scoreColor"
+                          :show-text="true"
+                        />
+                      </template>
+                    </el-table-column>
+                  </el-table>
+                </div>
+              </div>
+            </GlassCard>
+          </el-col>
+        </el-row>
+      </el-tab-pane>
+    </el-tabs>
   </div>
 </template>
 
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, reactive, ref, watch } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { UploadFile } from 'element-plus'
 import { ArrowDown, DataAnalysis, Document, UploadFilled } from '@element-plus/icons-vue'
@@ -265,11 +580,21 @@ import * as echarts from 'echarts'
 import { uploadFile } from '@/api/file'
 import { createSample } from '@/api/sample'
 import {
+  detectCascade,
   detectSample,
   downloadReport,
   getDetectionResults,
+  type CascadeDetectResult,
   type DetectionResultItem,
 } from '@/api/detection'
+import { getSystemConfig, setSystemConfig } from '@/api/config'
+import {
+  getCategories,
+  getCategoryReferenceDrug,
+  getCategoryReferenceDrugs,
+  type CategoryItem,
+  type ReferenceDrugItem,
+} from '@/api/library'
 import { getSampleChromatogram, type ChromatogramData } from '@/api/sample'
 import { formatChinaTime } from '@/utils/formatTime'
 import GlassCard from '@/components/GlassCard.vue'
@@ -306,6 +631,174 @@ const scoreColor = [
   { color: '#67c23a', percentage: 40 },
   { color: '#909399', percentage: 20 },
 ]
+
+// 级联检测
+const activeTab = ref('file')
+const categories = ref<CategoryItem[]>([])
+const referenceDrugs = ref<ReferenceDrugItem[]>([])
+const cascadeDetecting = ref(false)
+const savingThresholds = ref(false)
+const cascadeResult = ref<CascadeDetectResult | null>(null)
+const cascadeThresholdExpanded = ref<string[]>(['thresholds'])
+const CASCADING_THRESHOLDS_KEY = 'cascade_thresholds'
+const DEFAULT_THRESHOLDS = {
+  rrtTolerance: 0.03,
+  lambdaTolerance: 2.0,
+  r1Tolerance: 0.1,
+  r2Tolerance: 0.1,
+  r3Tolerance: 0.1,
+}
+
+const cascadeForm = reactive({
+  categoryId: null as number | null,
+  referenceDrugId: null as number | null,
+  tx: undefined as number | undefined,
+  lambda1: undefined as number | undefined,
+  lambda2: undefined as number | undefined,
+  areas: {
+    '245': undefined as number | undefined,
+    '250': undefined as number | undefined,
+    '255': undefined as number | undefined,
+    '260': undefined as number | undefined,
+  },
+  thresholds: { ...DEFAULT_THRESHOLDS },
+})
+
+function applyCascadeThresholds(saved: Record<string, any> | null | undefined) {
+  if (!saved || typeof saved !== 'object') return
+  const keys = Object.keys(DEFAULT_THRESHOLDS) as Array<keyof typeof DEFAULT_THRESHOLDS>
+  keys.forEach((key) => {
+    const value = saved[key]
+    if (typeof value === 'number' && value > 0) {
+      cascadeForm.thresholds[key] = value
+    }
+  })
+}
+
+async function loadCascadeThresholds() {
+  try {
+    const res = await getSystemConfig(CASCADING_THRESHOLDS_KEY)
+    applyCascadeThresholds(res.data.value)
+  } catch (error) {
+    console.warn('加载级联阈值配置失败，使用默认值:', error)
+  }
+}
+
+async function saveCascadeThresholds() {
+  savingThresholds.value = true
+  try {
+    await setSystemConfig(CASCADING_THRESHOLDS_KEY, { ...cascadeForm.thresholds }, '级联检测阈值设定')
+    ElMessage.success('阈值已保存')
+  } catch (error) {
+    console.error('保存阈值失败:', error)
+  } finally {
+    savingThresholds.value = false
+  }
+}
+
+async function loadCategories() {
+  try {
+    const res = await getCategories()
+    categories.value = res.data
+    if (categories.value.length > 0 && cascadeForm.categoryId === null) {
+      cascadeForm.categoryId = categories.value[0].id
+      await onCascadeCategoryChange(cascadeForm.categoryId)
+    }
+  } catch (error) {
+    console.error('加载药物类别失败:', error)
+    ElMessage.error('加载药物类别失败')
+  }
+}
+
+async function loadReferenceDrugs(categoryId: number) {
+  try {
+    const res = await getCategoryReferenceDrugs(categoryId)
+    referenceDrugs.value = res.data
+  } catch (error) {
+    console.error('加载参照药物失败:', error)
+    referenceDrugs.value = []
+  }
+}
+
+async function loadDefaultReferenceDrug(categoryId: number) {
+  try {
+    const res = await getCategoryReferenceDrug(categoryId)
+    if (res.data && res.data.id) {
+      cascadeForm.referenceDrugId = res.data.id
+    } else if (referenceDrugs.value.length > 0) {
+      cascadeForm.referenceDrugId = referenceDrugs.value[0].id
+    } else {
+      cascadeForm.referenceDrugId = null
+    }
+  } catch (error) {
+    console.error('加载默认参照药物失败:', error)
+    if (referenceDrugs.value.length > 0) {
+      cascadeForm.referenceDrugId = referenceDrugs.value[0].id
+    } else {
+      cascadeForm.referenceDrugId = null
+    }
+  }
+}
+
+async function onCascadeCategoryChange(categoryId: number) {
+  cascadeForm.referenceDrugId = null
+  await loadReferenceDrugs(categoryId)
+  await loadDefaultReferenceDrug(categoryId)
+}
+
+async function handleCascadeDetect() {
+  if (!cascadeForm.categoryId) {
+    ElMessage.warning('请选择药物类别')
+    return
+  }
+  if (!cascadeForm.referenceDrugId) {
+    ElMessage.warning('请选择参照药物')
+    return
+  }
+  if (!cascadeForm.tx || cascadeForm.tx <= 0) {
+    ElMessage.warning('保留时间 tx 必须大于 0')
+    return
+  }
+  const areaKeys = ['245', '250', '255', '260'] as const
+  for (const key of areaKeys) {
+    const value = cascadeForm.areas[key]
+    if (!value || value <= 0) {
+      ElMessage.warning(`A${key} 必须大于 0`)
+      return
+    }
+  }
+
+  cascadeDetecting.value = true
+  cascadeResult.value = null
+  try {
+    const res = await detectCascade({
+      categoryId: cascadeForm.categoryId,
+      referenceDrugId: cascadeForm.referenceDrugId,
+      tx: cascadeForm.tx,
+      lambda1: cascadeForm.lambda1 ?? null,
+      lambda2: cascadeForm.lambda2 ?? null,
+      areas: {
+        '245': cascadeForm.areas['245']!,
+        '250': cascadeForm.areas['250']!,
+        '255': cascadeForm.areas['255']!,
+        '260': cascadeForm.areas['260']!,
+      },
+      thresholds: { ...cascadeForm.thresholds },
+      topN: 10,
+    })
+    cascadeResult.value = res.data
+    ElMessage.success('级联检测完成')
+  } catch (error) {
+    console.error('级联检测失败:', error)
+  } finally {
+    cascadeDetecting.value = false
+  }
+}
+
+onMounted(() => {
+  loadCategories()
+  loadCascadeThresholds()
+})
 
 function handleFileChange(uploadFile: UploadFile) {
   selectedFile.value = uploadFile.raw || null
@@ -853,5 +1346,87 @@ onBeforeUnmount(() => {
   height: 460px;
   position: relative;
   z-index: 1;
+}
+
+.detect-tabs {
+  :deep(.el-tabs__header) {
+    background: rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 0;
+  }
+
+  :deep(.el-tabs__item) {
+    color: rgba(255, 255, 255, 0.65);
+    font-weight: 500;
+  }
+
+  :deep(.el-tabs__item.is-active) {
+    color: #66b1ff;
+    background: rgba(64, 158, 255, 0.1);
+  }
+
+  :deep(.el-tabs__content) {
+    padding: 20px 0 0;
+  }
+}
+
+.cascade-form {
+  .el-form-item {
+    margin-bottom: 14px;
+  }
+
+  :deep(.el-input-number) {
+    width: 100%;
+  }
+}
+
+.cascade-result {
+  .step-section {
+    margin-bottom: 24px;
+    padding: 16px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .step-1 {
+    border-left: 4px solid #409eff;
+  }
+
+  .step-2 {
+    border-left: 4px solid #67c23a;
+  }
+
+  .step-3 {
+    border-left: 4px solid #f56c6c;
+  }
+
+  .step-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .step-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.92);
+  }
+
+  .step-count {
+    margin-left: auto;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  .step-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 12px;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.7);
+  }
 }
 </style>

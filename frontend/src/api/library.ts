@@ -51,6 +51,12 @@ export interface ImportLibraryResult {
   failed: { name: string; reason: string }[]
 }
 
+export interface ReferenceDrugItem {
+  id: number
+  name: string
+  retentionTime: number
+}
+
 export function getCategories(): Promise<ApiResponse<CategoryItem[]>> {
   return request.get('/library/categories')
 }
@@ -98,4 +104,25 @@ export function deleteDrug(id: number): Promise<ApiResponse<{ deleted: number }>
 
 export function batchDeleteDrugs(ids: number[]): Promise<ApiResponse<{ deleted: number }>> {
   return request.delete('/library/drugs', { data: { ids } })
+}
+
+/**
+ * 获取类别下可作为参照物的药物列表。
+ */
+export function getCategoryReferenceDrugs(categoryId: number): Promise<ApiResponse<ReferenceDrugItem[]>> {
+  return request.get(`/library/categories/${categoryId}/reference-drugs`)
+}
+
+/**
+ * 获取类别当前默认参照药物。
+ */
+export function getCategoryReferenceDrug(categoryId: number): Promise<ApiResponse<ReferenceDrugItem | null>> {
+  return request.get(`/library/categories/${categoryId}/reference-drug`)
+}
+
+/**
+ * 设置类别默认参照药物。
+ */
+export function setCategoryReferenceDrug(categoryId: number, referenceDrugId: number): Promise<ApiResponse<any>> {
+  return request.put(`/library/categories/${categoryId}/reference-drug`, { referenceDrugId })
 }

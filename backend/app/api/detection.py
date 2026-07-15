@@ -10,6 +10,7 @@ from app.dao.detection_dao import DetectionResultDAO
 from app.dao.library_dao import DrugDAO, ReferencePeakDAO
 from app.errors.exceptions import NotFoundException, ParamValidationException
 from app.model import User
+from app.service.cascade_detection_service import detect_by_cascade
 from app.service.detection_service import (
     create_batch_task,
     detect_single_sample,
@@ -138,6 +139,69 @@ def get_task_view(task_id: int):
         raise NotFoundException("任务不存在")
 
     return success(data=progress)
+
+
+@detection_bp.route("/detect/cascade", methods=["POST"])
+@jwt_required()
+def detect_cascade_view():
+    """
+    三步级联检测。
+
+    请求体：{
+        "categoryId": 1,
+        "referenceDrugId": 37,
+        "tx": 10.821,
+        "lambda1": 222.7,
+        "lambda2": null,
+        "areas": {"245": ..., "250": ..., "255": ..., "260": ...},
+        "thresholds": {...},
+        "topN": 10
+    }
+    """
+    data = request.get_json(silent=True) or {}
+
+    category_id = data.get("categoryId")
+    reference_drug_id = data.get("referenceDrugId")
+    tx = data.get("tx")
+    lambda1 = data.get("lambda1")
+    lambda2 = data.get("lambda2")
+    areas = data.get("areas", {})
+    thresholds = data.get("thresholds", {})
+    top_n = data.get("topN", 10)
+
+    if not isinstance(top_n, int) or top_n < 1:
+        raise ParamValidationException("topN 必须是大于等于 1 的整数")
+
+    user = get_current_user()
+    operator_id = user.id if isinstance(user, User) else None
+
+    result = detect_by_cascade(
+        category_id=category_id,
+        reference_drug_id=reference_drug_id,
+        tx=tx,
+        lambda1=lambda1,
+        lambda2=lambda2,
+        areas=areas,
+        thresholds=thresholds,
+        operator_id=operator_id,
+        top_n=top_n,
+    )
+
+    log_operation(
+        action="执行三步级联检测",
+        module="detection",
+        target_type="drug_category",
+        target_id=category_id,
+        detail={
+            "referenceDrugId": reference_drug_id,
+            "tx": tx,
+            "lambda1": lambda1,
+            "lambda2": lambda2,
+            "topN": top_n,
+        },
+    )
+
+    return success(data=result, msg="ok")
 
 
 @detection_bp.route("/detect/results/<int:sample_id>", methods=["GET"])

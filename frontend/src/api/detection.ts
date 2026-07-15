@@ -28,6 +28,83 @@ export interface TaskProgress {
   progress: number
 }
 
+export interface CascadeDetectPayload {
+  categoryId: number
+  referenceDrugId: number
+  tx: number
+  lambda1?: number | null
+  lambda2?: number | null
+  areas: {
+    '245': number
+    '250': number
+    '255': number
+    '260': number
+  }
+  thresholds: {
+    rrtTolerance: number
+    lambdaTolerance: number
+    r1Tolerance: number
+    r2Tolerance: number
+    r3Tolerance: number
+  }
+  topN?: number
+}
+
+export interface CascadeReferenceDrug {
+  id: number
+  name: string
+  retentionTime: number
+}
+
+export interface CascadeStep1Candidate {
+  drugId: number
+  drugName: string
+  rrtDb: number
+  delta: number
+}
+
+export interface CascadeStep2Candidate {
+  drugId: number
+  drugName: string
+  rrtDb: number
+  delta: number
+}
+
+export interface CascadeStep3Result {
+  drugId: number
+  drugName: string
+  r1Db: number
+  r2Db: number
+  r3Db: number
+  deltaR1: number
+  deltaR2: number
+  deltaR3: number
+  score: number
+}
+
+export interface CascadeDetectResult {
+  referenceDrug: CascadeReferenceDrug
+  step1: {
+    rrtSample: number
+    tolerance: number
+    candidateCount: number
+    candidates: CascadeStep1Candidate[]
+  }
+  step2: {
+    lambda1?: number | null
+    lambda2?: number | null
+    tolerance: number
+    candidateCount: number
+    candidates: CascadeStep2Candidate[]
+  }
+  step3: {
+    r1: number
+    r2: number
+    r3: number
+    results: CascadeStep3Result[]
+  }
+}
+
 /**
  * 单样本检测。
  */
@@ -85,4 +162,11 @@ export function downloadReport(sampleId: number, format: 'pdf' | 'excel' = 'pdf'
   return request.get(`/reports/${sampleId}/download?format=${format}`, {
     responseType: 'blob',
   })
+}
+
+/**
+ * 三步级联检测（RRT → UV λmax → 峰面积比）。
+ */
+export function detectCascade(data: CascadeDetectPayload): Promise<ApiResponse<CascadeDetectResult>> {
+  return request.post('/detect/cascade', data)
 }

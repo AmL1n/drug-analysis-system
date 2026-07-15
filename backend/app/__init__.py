@@ -83,6 +83,7 @@ def create_app(config_name: str = "development") -> Flask:
             if "already exists" not in str(e).lower():
                 raise
         _migrate_operator_no()
+        _migrate_drug_columns()
         _init_seed_data()
 
     return app
@@ -179,7 +180,7 @@ def _init_seed_data() -> None:
     仅在角色表为空时执行，避免重复插入。
     多 worker 并发启动时可能因唯一键冲突报错，直接回滚即可。
     """
-    from app.model import DrugCategory, Role, User, db
+    from app.model import Drug, DrugCategory, Role, User, db
     from app.utils.security import hash_password
 
     try:
@@ -221,9 +222,20 @@ def _init_seed_data() -> None:
             db.session.commit()
 
         # 初始化药物类别（与《数据库六种表结构》对齐）
-        if not DrugCategory.query.first():
+        sedative_category = DrugCategory.query.filter_by(code=1).first()
+        if sedative_category is None:
+            sedative_category = DrugCategory(
+                name="安神镇定类",
+                code=1,
+                description="镇静催眠类药物",
+                wavelengths=[245, 250, 255, 260],
+                sort_order=1,
+            )
+            db.session.add(sedative_category)
+            db.session.flush()
+
+        if not DrugCategory.query.filter_by(code=2).first():
             categories = [
-                DrugCategory(name="安神镇定类", code=1, description="镇静催眠类药物", wavelengths=[245, 250, 255, 260], sort_order=1),
                 DrugCategory(name="减肥类", code=2, description="减肥类药物", wavelengths=[245, 248, 250, 254], sort_order=2),
                 DrugCategory(name="降糖类", code=3, description="降糖类药物", wavelengths=[], sort_order=3),
                 DrugCategory(name="降压类", code=4, description="降压类药物", wavelengths=[], sort_order=4),
@@ -233,7 +245,14 @@ def _init_seed_data() -> None:
                 DrugCategory(name="止咳平喘类", code=8, description="止咳平喘类药物", wavelengths=[], sort_order=8),
             ]
             db.session.add_all(categories)
-            db.session.commit()
+
+        # 若安神镇定类尚未设置默认参照药物，则尝试指定为盐酸氯丙嗪
+        if sedative_category.reference_drug_id is None:
+            reference_drug = Drug.query.filter_by(name="盐酸氯丙嗪").first()
+            if reference_drug is not None:
+                sedative_category.reference_drug_id = reference_drug.id
+
+        db.session.commit()
     except IntegrityError:
         # 多 worker 并发启动时可能出现唯一键冲突，说明其他 worker 已插入种子数据
         db.session.rollback()
@@ -273,6 +292,27 @@ def _migrate_operator_no() -> None:
                 user.operator_no = f"OP-{counter:06d}"
                 existing.add(user.operator_no)
             db.session.commit()
+    except Exception:
+        db.session.rollback()
+        raise
+
+
+def _migrate_drug_columns() -> None:
+    """
+    兼容性迁移：为 drugs 表添加级联检测所需的 lambda_max_1、lambda_max_2 列。
+    """
+    try:
+        inspector = inspect(db.engine)
+        columns = {col["name"] for col in inspector.get_columns("drugs")}
+        if "lambda_max_1" not in columns:
+            db.session.execute(
+                text("ALTER TABLE drugs ADD COLUMN lambda_max_1 NUMERIC(8, 2)")
+            )
+        if "lambda_max_2" not in columns:
+            db.session.execute(
+                text("ALTER TABLE drugs ADD COLUMN lambda_max_2 NUMERIC(8, 2)")
+            )
+        db.session.commit()
     except Exception:
         db.session.rollback()
         raise

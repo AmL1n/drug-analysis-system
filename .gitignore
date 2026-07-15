@@ -42,6 +42,10 @@ logs/
 uploads/
 *.log
 
+# Runtime PIDs / sockets
+*.pid
+*.sock
+
 # Database
 *.db
 *.sqlite

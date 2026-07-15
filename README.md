@@ -79,12 +79,14 @@ npm run dev
 
 ### 4. 导入示例对照品库
 
-启动后端后，示例类别会自动创建。执行 SQL 脚本导入安神镇定类 9 种对照品：
+启动后端后，示例类别会自动创建。可通过页面“药品库 → 导入”上传 `samples/demo_data/demo_drugs_full.json`，或执行 SQL 脚本导入安神镇定类 9 种对照品：
 
 ```bash
 cd backend
 sqlite3 drug_check_dev.db < sql/seed_sample_library.sql
 ```
+
+> 对照品库 JSON 支持 `rt`/`rrt`、`lambda1`/`lambda2` 以及 `a245`/`a250`/`a255`/`a260` 四个波长峰面积常数，导入时会同时创建药物、参考峰、面积常数和默认模型参数。
 
 ## 样本数据
 
@@ -96,15 +98,52 @@ sqlite3 drug_check_dev.db < sql/seed_sample_library.sql
 | `sample_retention_time.txt` | 标准保留时间导入格式 |
 | `sample_peak_area.txt` | 标准峰面积导入格式（4 组波长） |
 | `sample_spectra.xlsx` | 标准光谱吸收表 |
+| `demo_data/demo_drugs_full.json` | 企业版级联检测示例库（含 lambda_max 与 4 波长峰面积常数） |
 
 ## 检测流程
 
+系统支持两种检测模式：
+
+### 模式一：文件上传自动检测
+
 1. 登录系统
-2. 进入“检测分析”页
+2. 进入“检测分析”页，选择“文件上传检测”标签
 3. 上传色谱图文件（CSV / TXT / Excel）
 4. 系统自动识别峰、匹配对照品库
 5. 查看 Top 候选药物、峰值图对比
 6. 下载 PDF / Excel 报告
+
+### 模式二：手动录入级联检测（企业版）
+
+针对已知主峰信息的对照样品，系统提供“三步级联检测”：
+
+1. 进入“检测分析”页，选择“级联检测 / 手动录入”标签
+2. 选择药物类别（如“安神镇定类”）和参照药物（如“盐酸氯丙嗪”）
+3. 输入主峰保留时间 `tx`、最大吸收波长 `λ1`/`λ2`（可选）以及 4 个波长峰面积 `A245/A250/A255/A260`
+4. 点击检测，依次查看：
+   - **Step 1：RRT 初筛** —— `tx / ts` 与库中相对保留时间比对
+   - **Step 2：UV λmax 复筛** —— 样品吸收波长与库中 `lambda1`/`lambda2` 比对
+   - **Step 3：峰面积比最终定性** —— 计算 `R1=A245/A250`、`R2=A255/A250`、`R3=A260/A250` 与库中常数比对，输出 Top N 候选
+
+示例（苯巴比妥）：
+
+```json
+{
+  "categoryId": 1,
+  "referenceDrugId": 1003,
+  "tx": 10.821,
+  "lambda1": 222.7,
+  "lambda2": null,
+  "areas": {
+    "245": 1441107,
+    "250": 983841,
+    "255": 729551,
+    "260": 626377
+  }
+}
+```
+
+对应 API：`POST /api/detect/cascade`
 
 ## Docker 部署
 

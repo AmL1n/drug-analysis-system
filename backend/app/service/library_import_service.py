@@ -230,8 +230,6 @@ def import_library_from_json(
                     continue
 
                 area_record = area_map.get(drug_name)
-                if area_record is None:
-                    raise ValueError("未找到对应 area 数据")
 
                 retention_time = _to_decimal(record.get("rt"))
                 relative_retention_time = _to_decimal(
@@ -263,7 +261,7 @@ def import_library_from_json(
                     drug.category_id = drug_category.id
                     drug.peak_count = 1
 
-                # 补充 CAS、分子式、说明等元数据
+                # 补充 CAS、分子式、说明、最大吸收波长等元数据
                 drug.cas = _safe_str(record.get("cas")) or drug.cas
                 drug.molecular_formula = (
                     _safe_str(record.get("molecular_formula"))
@@ -272,6 +270,8 @@ def import_library_from_json(
                 drug.description = (
                     _safe_str(record.get("description")) or drug.description
                 )
+                drug.lambda_max_1 = _parse_wavelength(record.get("lambda1"))
+                drug.lambda_max_2 = _parse_wavelength(record.get("lambda2"))
 
                 db.session.flush()
 
@@ -286,13 +286,15 @@ def import_library_from_json(
                 )
                 db.session.add(peak)
 
-                area_constants = _build_area_constants(area_record, drug.id)
-                for const in area_constants:
-                    db.session.add(const)
+                # area 数据可选：缺失时仅跳过级联判定相关数据，不影响药物和主峰导入
+                if area_record is not None:
+                    area_constants = _build_area_constants(area_record, drug.id)
+                    for const in area_constants:
+                        db.session.add(const)
 
-                spectra = _build_spectra(record, area_constants, drug.id)
-                for sp in spectra:
-                    db.session.add(sp)
+                    spectra = _build_spectra(record, area_constants, drug.id)
+                    for sp in spectra:
+                        db.session.add(sp)
 
                 if is_new:
                     created += 1
