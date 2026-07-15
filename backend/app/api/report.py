@@ -32,6 +32,7 @@ from app.errors.exceptions import NotFoundException, ParamValidationException
 from app.service.log_service import log_operation
 from app.utils.pdf_fonts import register_chinese_font
 from app.utils.report_chart import generate_chromatogram_chart
+from app.utils.timezone import format_cn_time, now_cn
 
 # 模块加载时注册中文字体，供后续 PDF 生成使用
 _CHINESE_FONT = register_chinese_font()
@@ -67,7 +68,7 @@ def download_report_view(sample_id: int):
         mimetype = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         ext = "xlsx"
 
-    filename = f"report_{sample.sample_no}_{datetime.now().strftime('%Y%m%d%H%M%S')}.{ext}"
+    filename = f"report_{sample.sample_no}_{now_cn().strftime('%Y%m%d%H%M%S')}.{ext}"
     buffer.seek(0)
 
     log_operation(
@@ -153,7 +154,7 @@ def _build_pdf(sample, detected, all_results):
     detect_time = sample.detect_time or sample.created_at
     info_data = [
         ["样品编号", sample.sample_no, "样品名称", sample.sample_name or "-"],
-        ["检测时间", detect_time.isoformat(), "仪器品牌", sample.instrument_brand or "-"],
+        ["检测时间", format_cn_time(detect_time), "仪器品牌", sample.instrument_brand or "-"],
         ["候选药物数", str(len(all_results)), "检出药物数", str(len(detected))],
     ]
     info_table = Table(info_data, colWidths=[25 * mm, 55 * mm, 25 * mm, 55 * mm])
@@ -244,7 +245,7 @@ def _build_excel(sample, detected, all_results):
     ws.append(["样品编号", sample.sample_no])
     ws.append(["样品名称", sample.sample_name or "-"])
     detect_time = sample.detect_time or sample.created_at
-    ws.append(["检测时间", detect_time.isoformat()])
+    ws.append(["检测时间", format_cn_time(detect_time)])
     ws.append(["候选药物数", len(all_results)])
     ws.append(["检出药物数", len(detected)])
     ws.append([])

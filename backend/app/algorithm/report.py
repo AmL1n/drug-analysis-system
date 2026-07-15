@@ -8,8 +8,9 @@ PDF / Word / Excel。
 本模块不直接操作文件，只生成 Python 字典对象。
 """
 
-from datetime import datetime
 from typing import Any, Dict, List, Optional
+
+from app.utils.timezone import now_cn
 
 from .types import DrugMatchResult, MatchedPeak
 
@@ -131,7 +132,7 @@ def build_detection_report(
         "report_type": "detection",
         "sample_no": sample_no,
         "sample_name": sample_name,
-        "generated_at": datetime.utcnow().isoformat(),
+        "generated_at": now_cn().isoformat(),
         "summary": {
             "total_candidates": len(results),
             "detected_count": len([r for r in results if r.is_detected]),
@@ -159,7 +160,7 @@ def build_batch_report(
     return {
         "report_type": "batch",
         "task_no": task_no,
-        "generated_at": datetime.utcnow().isoformat(),
+        "generated_at": now_cn().isoformat(),
         "summary": {
             "total_samples": len(sample_reports),
             "total_detected": total_detected,

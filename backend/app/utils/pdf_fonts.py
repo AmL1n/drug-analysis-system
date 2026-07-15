@@ -11,11 +11,12 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 
 
-# Windows 常见中文字体候选，按优先级排序
+# Windows / Linux 常见中文字体候选，按优先级排序
 _FONT_CANDIDATES = [
     ("SimHei", "C:/Windows/Fonts/simhei.ttf", None),
     ("MicrosoftYaHei", "C:/Windows/Fonts/msyh.ttc", 0),
     ("SimSun", "C:/Windows/Fonts/simsun.ttc", 0),
+    ("WenQuanYiZenHei", "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc", 0),
 ]
 
 

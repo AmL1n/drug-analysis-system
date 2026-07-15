@@ -3,9 +3,14 @@ FROM python:3.9-slim
 
 WORKDIR /app
 
-# 安装编译依赖（部分包需要）
-RUN apt-get update && apt-get install -y --no-install-recommends gcc libpq-dev \
+# 安装编译依赖、中文字体及时区数据
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc libpq-dev fonts-wqy-zenhei tzdata \
     && rm -rf /var/lib/apt/lists/*
+
+# 设置容器默认时区为中国上海
+ENV TZ=Asia/Shanghai
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt

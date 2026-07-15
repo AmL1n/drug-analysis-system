@@ -20,11 +20,12 @@ from app.model import Sample
 from app.service.file_service import parse_file_to_chromatogram
 
 
-# 中文字体候选，与 pdf_fonts 保持一致
+# 中文字体候选，与 pdf_fonts 保持一致（Windows + Linux）
 _FONT_CANDIDATES = [
     ("C:/Windows/Fonts/simhei.ttf", None),
     ("C:/Windows/Fonts/msyh.ttc", 0),
     ("C:/Windows/Fonts/simsun.ttc", 0),
+    ("/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc", 0),
 ]
 
 
