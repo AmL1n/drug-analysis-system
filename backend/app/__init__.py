@@ -98,6 +98,11 @@ def _check_production_secrets(app: Flask) -> None:
 
 def _ensure_directories(app: Flask) -> None:
     """确保上传目录、日志目录与 SQLite 数据目录存在。"""
+    import sqlite3
+
+    print(f"[DEBUG] cwd={os.getcwd()}, FLASK_ENV={app.config.get('ENV')}")
+    print(f"[DEBUG] SQLALCHEMY_DATABASE_URI={app.config.get('SQLALCHEMY_DATABASE_URI')}")
+
     upload_folder = app.config.get("UPLOAD_FOLDER")
     log_dir = app.config.get("LOG_DIR")
     for directory in (upload_folder, log_dir):
@@ -112,6 +117,15 @@ def _ensure_directories(app: Flask) -> None:
             db_dir = os.path.dirname(os.path.abspath(db_path))
             if db_dir and not os.path.exists(db_dir):
                 os.makedirs(db_dir, exist_ok=True)
+            print(f"[DEBUG] db_dir={db_dir}, exists={os.path.exists(db_dir)}, writable={os.access(db_dir, os.W_OK)}")
+            # 直接用 sqlite3 测试能否创建/打开文件
+            try:
+                conn = sqlite3.connect(db_path)
+                conn.execute("SELECT 1")
+                conn.close()
+                print(f"[DEBUG] sqlite3 test connect OK: {db_path}")
+            except Exception as e:
+                print(f"[DEBUG] sqlite3 test connect FAILED: {db_path}, error={e}")
 
 
 def _setup_jwt_loaders(app: Flask) -> None:
