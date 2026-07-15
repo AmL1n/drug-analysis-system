@@ -2,6 +2,10 @@
 # 部署前请先在 Render Dashboard 创建 Blueprint 并关联本仓库。
 # JWT_SECRET_KEY 与 SECRET_KEY 已配置为 Render 自动生成；
 # 如需自定义，可在 Dashboard 对应服务的环境变量中覆盖。
+#
+# 注意：free 套餐不支持挂载 Disk，因此 SQLite 数据保存在容器临时存储中，
+# 重新部署后会丢失。如需持久化，请升级到 starter 及以上套餐并恢复 disk 配置，
+# 或将 DATABASE_URL 改为 Render PostgreSQL 等外部数据库。
 
 services:
   - type: web
@@ -21,10 +25,6 @@ services:
         generateValue: true
       - key: SECRET_KEY
         generateValue: true
-    disk:
-      name: drug-analysis-data
-      mountPath: /app/data
-      sizeGB: 1
 
   # Render 的 static site 属于 web 类型，并设置 runtime: static
   - type: web
