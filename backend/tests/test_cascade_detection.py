@@ -99,11 +99,11 @@ def _login(client):
 
 def _import_demo_data(client, headers):
     demo_path = os.path.join(
-        PROJECT_ROOT, "..", "samples", "demo_data", "demo_drugs_full.json"
+        PROJECT_ROOT, "..", "samples", "enterprise", "drug_library_sedatives.json"
     )
     demo_path = os.path.abspath(demo_path)
     with open(demo_path, "rb") as f:
-        data = {"file": (f, "demo_drugs_full.json")}
+        data = {"file": (f, "drug_library_sedatives.json")}
         resp = client.post(
             "/api/library/import",
             data=data,

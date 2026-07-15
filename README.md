@@ -89,13 +89,18 @@ npm run dev
 
 ## 样本数据
 
-`samples/enterprise/` 目录下提供企业版示例文件：
+`samples/enterprise/` 目录下提供企业版示例文件（**合成测试数据，仅供流程验证**）：
 
 | 文件 | 说明 |
 |------|------|
-| `drug_library_sedatives.json` | 安神镇定类 9 种对照品库（保留时间、RRT、λmax、4 波长峰面积常数） |
-| `cascade_test_all_9.json` | 9 种药物的级联检测输入参数 |
-| `chromatogram_sedatives.csv` | 含 9 个峰的模拟色谱图，可用于文件上传自动检测 |
+| `drug_library_sedatives.json` | 安神镇定类 9 种对照品库（基于用户提供的真实参考数据） |
+| `drug_library_enterprise.json` | 多类别合成库，含 6 个类别共 39 种药物 |
+| `cascade_test_all_9.json` | 安神镇定类 9 种药物的级联检测输入参数 |
+| `cascade_test_enterprise.json` | 6 个类别共 39 种药物的级联检测输入参数 |
+| `chromatogram_sedatives.csv` | 安神镇定类 9 个峰模拟色谱图 |
+| `chromatogram_weight_loss.csv` | 减肥类 6 个峰模拟色谱图 |
+| `chromatogram_diabetes.csv` | 降糖类 6 个峰模拟色谱图 |
+| `chromatogram_mixed.csv` | 混合 12 个峰模拟色谱图 |
 
 ## 检测流程
 
