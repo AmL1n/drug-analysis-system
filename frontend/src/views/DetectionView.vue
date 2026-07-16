@@ -88,7 +88,7 @@
     <el-tabs v-model="activeTab" type="border-card" class="detect-tabs">
       <el-tab-pane label="文件上传检测" name="file">
         <el-row :gutter="20" class="main-row">
-          <el-col :xs="24" :md="8">
+          <el-col :xs="24" :md="7">
             <GlassCard class="upload-card" :tilt="false">
               <template #header>
                 <span class="card-header-title">上传样品数据</span>
@@ -143,7 +143,7 @@
             </GlassCard>
           </el-col>
 
-          <el-col :xs="24" :md="16">
+          <el-col :xs="24" :md="17">
             <GlassCard class="result-card" :tilt="false">
               <template #header>
                 <span class="card-header-title">检测结果</span>
@@ -225,7 +225,7 @@
                       {{ row.matchedPeakCount }} / {{ row.totalPeakCount }}
                     </template>
                   </el-table-column>
-                  <el-table-column label="状态" width="85">
+                  <el-table-column label="状态" width="95">
                     <template #default="{ row }">
                       <el-tag
                         :type="row.isDetected ? 'danger' : 'info'"
@@ -236,7 +236,7 @@
                       </el-tag>
                     </template>
                   </el-table-column>
-                  <el-table-column label="操作" width="120" fixed="right">
+                  <el-table-column label="操作" width="130">
                     <template #default="{ row }">
                       <el-button
                         link
@@ -1376,6 +1376,10 @@ onBeforeUnmount(() => {
   }
 }
 
+.result-card {
+  overflow-x: auto;
+}
+
 .card-header-title {
   font-weight: 600;
   font-size: 16px;
@@ -1467,6 +1471,8 @@ onBeforeUnmount(() => {
 
 /* 修复检测结果表格状态/操作列文字堆叠 */
 .detection-result-table {
+  min-width: 820px;
+
   :deep(.status-tag) {
     white-space: nowrap;
   }
