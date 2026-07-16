@@ -126,3 +126,10 @@ export function getCategoryReferenceDrug(categoryId: number): Promise<ApiRespons
 export function setCategoryReferenceDrug(categoryId: number, referenceDrugId: number): Promise<ApiResponse<any>> {
   return request.put(`/library/categories/${categoryId}/reference-drug`, { referenceDrugId })
 }
+
+/**
+ * 使用样本 RRT 增量训练药物的 RRT 高斯模型。
+ */
+export function trainDrugRrt(drugId: number, rrt: number): Promise<ApiResponse<{ n: number; mean: number; std: number }>> {
+  return request.post(`/library/drugs/${drugId}/train-rrt`, { rrt })
+}

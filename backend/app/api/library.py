@@ -19,6 +19,7 @@ from app.service.library_service import (
     list_reference_drugs,
     list_spectra,
     set_category_reference_drug,
+    update_drug_rrt_stats,
 )
 from app.service.log_service import log_operation
 from app.utils.pagination import get_pagination_params
@@ -163,6 +164,34 @@ def import_library_view():
     )
 
     return success(data=summary)
+
+
+@library_bp.route("/library/drugs/<int:drug_id>/train-rrt", methods=["POST"])
+@jwt_required()
+def train_drug_rrt_view(drug_id: int):
+    """
+    使用新的 RRT 观测值增量训练药物的 RRT 高斯模型。
+
+    请求体：{"rrt": float}
+    """
+    data = request.get_json(silent=True) or {}
+    rrt = data.get("rrt")
+    if rrt is None:
+        raise ParamValidationException("rrt 不能为空")
+    try:
+        rrt = float(rrt)
+    except (ValueError, TypeError):
+        raise ParamValidationException("rrt 必须为数值")
+
+    stats = update_drug_rrt_stats(drug_id, rrt)
+    log_operation(
+        action="训练 RRT 模型",
+        module="library",
+        target_type="drug",
+        target_id=drug_id,
+        detail={"drugId": drug_id, "rrt": rrt, "stats": stats},
+    )
+    return success(data=stats, msg="RRT 模型训练成功")
 
 
 @library_bp.route("/library/drugs/<int:drug_id>", methods=["DELETE"])

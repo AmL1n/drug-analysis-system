@@ -12,7 +12,11 @@ from app.algorithm.area_ratio import match_area_ratios
 from app.algorithm.bayes import bayes_from_matches
 from app.algorithm.fusion import calculate_confidence, weighted_fusion
 from app.algorithm.report import build_detection_report
-from app.algorithm.retention import match_peaks_by_retention_time
+from app.algorithm.retention import (
+    match_peaks_by_retention_time,
+    match_peaks_by_retention_time_with_stats,
+)
+from app.service.library_service import get_drug_rrt_stats
 from app.algorithm.types import DrugMatchResult, MatchedPeak, Peak, Spectrum
 from app.algorithm.uv_match import calculate_uv_match_score
 from app.dao.detection_dao import DetectionResultDAO, DetectionTaskDAO, TaskSampleDAO
@@ -155,10 +159,20 @@ def _match_drug(
     area_ratio_method: str = "relative_error",
 ) -> DrugMatchResult:
     """将样本峰与单个药物进行匹配。"""
-    # 1. RRT 匹配
-    rrt_matches = match_peaks_by_retention_time(
-        sample_peaks, reference_peaks, tolerance=rrt_tolerance
-    )
+    # 1. RRT 匹配：若药物已学习到有效的 RRT 统计量，则使用增量高斯模型
+    stats = get_drug_rrt_stats(drug_id)
+    if stats and stats["n"] > 0 and stats["std"] is not None and stats["std"] > 0:
+        rrt_matches = match_peaks_by_retention_time_with_stats(
+            sample_peaks,
+            reference_peaks,
+            rrt_mean=stats["mean"],
+            rrt_std=stats["std"],
+            tolerance=rrt_tolerance,
+        )
+    else:
+        rrt_matches = match_peaks_by_retention_time(
+            sample_peaks, reference_peaks, tolerance=rrt_tolerance
+        )
 
     # 2. 峰面积比匹配
     area_score = match_area_ratios(sample_peaks, reference_peaks, method=area_ratio_method)

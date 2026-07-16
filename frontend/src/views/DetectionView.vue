@@ -231,6 +231,18 @@
                       </el-tag>
                     </template>
                   </el-table-column>
+                  <el-table-column label="操作" width="120" fixed="right">
+                    <template #default="{ row }">
+                      <el-button
+                        link
+                        type="primary"
+                        size="small"
+                        @click.stop="handleTrainRrt(row)"
+                      >
+                        确认并训练
+                      </el-button>
+                    </template>
+                  </el-table-column>
                 </el-table>
 
                 <el-result
@@ -586,7 +598,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import type { UploadFile } from 'element-plus'
 import { ArrowDown, DataAnalysis, Document, InfoFilled, UploadFilled } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
@@ -605,6 +617,7 @@ import {
   getCategories,
   getCategoryReferenceDrug,
   getCategoryReferenceDrugs,
+  trainDrugRrt,
   type CategoryItem,
   type ReferenceDrugItem,
 } from '@/api/library'
@@ -910,6 +923,76 @@ async function handleDetect() {
 function handleDrugSelect(row: DetectionResultItem | undefined) {
   selectedDrug.value = row || null
   renderChart()
+}
+
+function findNearestSamplePeak(retentionTime: number) {
+  const peaks = chromatogram.value?.peaks
+  if (!peaks || peaks.length === 0) return undefined
+
+  let nearest = peaks[0]
+  let minDiff = Math.abs(peaks[0].retentionTime - retentionTime)
+  for (const peak of peaks) {
+    const diff = Math.abs(peak.retentionTime - retentionTime)
+    if (diff < minDiff) {
+      minDiff = diff
+      nearest = peak
+    }
+  }
+  return nearest
+}
+
+function suggestDrugRrt(row: DetectionResultItem): number | undefined {
+  const refPeaks = row.referencePeaks || []
+  for (const ref of refPeaks) {
+    if (
+      ref.relativeRetentionTime == null ||
+      ref.relativeRetentionTime <= 0 ||
+      ref.retentionTime <= 0
+    ) {
+      continue
+    }
+    const referenceDrugRt = ref.retentionTime / ref.relativeRetentionTime
+    const samplePeak = findNearestSamplePeak(ref.retentionTime)
+    if (samplePeak && samplePeak.retentionTime > 0) {
+      return samplePeak.retentionTime / referenceDrugRt
+    }
+  }
+  return undefined
+}
+
+async function handleTrainRrt(row: DetectionResultItem) {
+  const suggested = suggestDrugRrt(row)
+
+  try {
+    const { value, action } = await ElMessageBox.prompt(
+      suggested !== undefined
+        ? `系统将使用匹配样本峰推算的 RRT ${suggested.toFixed(6)} 训练「${row.drugName}」的 RRT 模型，也可手动修改。`
+        : `请为「${row.drugName}」输入本次样本的 RRT 值以训练模型：`,
+      '确认并训练 RRT',
+      {
+        confirmButtonText: '确认训练',
+        cancelButtonText: '取消',
+        inputValue: suggested !== undefined ? String(suggested.toFixed(6)) : '',
+        inputValidator: (value) => {
+          const num = Number(value)
+          if (value === '' || Number.isNaN(num) || num <= 0) {
+            return '请输入有效的正数 RRT'
+          }
+          return true
+        },
+      }
+    )
+
+    if (action !== 'confirm') return
+
+    const rrt = Number(value)
+    await trainDrugRrt(row.drugId, rrt)
+    ElMessage.success(`「${row.drugName}」RRT 模型训练成功`)
+  } catch (error: any) {
+    if (error?.action === 'cancel' || error === 'cancel') return
+    console.error('RRT 训练失败:', error)
+    ElMessage.error(error?.response?.data?.msg || 'RRT 训练失败')
+  }
 }
 
 function renderChart() {

@@ -19,6 +19,7 @@ from app.model import (
     ReferenceSpectrum,
     db,
 )
+from app.service.library_service import init_drug_rrt_stats_from_reference_peaks
 
 _AREA_WAVELENGTHS = [245, 250, 255, 260]
 
@@ -285,6 +286,9 @@ def import_library_from_json(
                     is_main_peak=True,
                 )
                 db.session.add(peak)
+
+                # 初始化/重置药物的增量 RRT 学习统计量
+                init_drug_rrt_stats_from_reference_peaks(drug.id)
 
                 # area 数据可选：缺失时仅跳过级联判定相关数据，不影响药物和主峰导入
                 if area_record is not None:

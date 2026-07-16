@@ -78,6 +78,16 @@ class Drug(db.Model):
     )
     # 色谱峰个数
     peak_count = db.Column(db.Integer, default=0, comment="色谱峰个数")
+    # 增量高斯 RRT 学习统计量
+    rrt_training_count = db.Column(
+        db.Integer, default=0, comment="RRT 训练样本数 N"
+    )
+    rrt_mean = db.Column(
+        db.Numeric(12, 6), default=None, comment="RRT 均值 μ"
+    )
+    rrt_std = db.Column(
+        db.Numeric(12, 6), default=None, comment="RRT 标准差 σ"
+    )
     status = db.Column(db.SmallInteger, default=1, comment="状态：0禁用 1启用")
     created_at = db.Column(
         db.DateTime, default=datetime.utcnow, comment="创建时间"

@@ -299,7 +299,8 @@ def _migrate_operator_no() -> None:
 
 def _migrate_drug_columns() -> None:
     """
-    兼容性迁移：为 drugs 表添加级联检测所需的 lambda_max_1、lambda_max_2 列。
+    兼容性迁移：为 drugs 表添加级联检测所需的 lambda_max_1、lambda_max_2 列，
+    以及增量 RRT 学习所需的 rrt_training_count、rrt_mean、rrt_std 列。
     """
     try:
         inspector = inspect(db.engine)
@@ -311,6 +312,18 @@ def _migrate_drug_columns() -> None:
         if "lambda_max_2" not in columns:
             db.session.execute(
                 text("ALTER TABLE drugs ADD COLUMN lambda_max_2 NUMERIC(8, 2)")
+            )
+        if "rrt_training_count" not in columns:
+            db.session.execute(
+                text("ALTER TABLE drugs ADD COLUMN rrt_training_count INTEGER DEFAULT 0")
+            )
+        if "rrt_mean" not in columns:
+            db.session.execute(
+                text("ALTER TABLE drugs ADD COLUMN rrt_mean NUMERIC(12, 6)")
+            )
+        if "rrt_std" not in columns:
+            db.session.execute(
+                text("ALTER TABLE drugs ADD COLUMN rrt_std NUMERIC(12, 6)")
             )
         db.session.commit()
     except Exception:

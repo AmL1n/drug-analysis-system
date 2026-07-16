@@ -3,6 +3,8 @@
 对照品库服务模块。
 """
 
+import math
+from decimal import Decimal
 from typing import List, Optional
 
 from app.dao.library_dao import (
@@ -270,4 +272,105 @@ def set_category_reference_drug(category_id: int, reference_drug_id: int) -> dic
         "id": category.id,
         "referenceDrugId": category.reference_drug_id,
         "referenceDrugName": drug.name,
+    }
+
+
+def get_drug_rrt_stats(drug_id: int) -> Optional[dict]:
+    """获取药物的增量 RRT 学习统计量。"""
+    drug = DrugDAO.get_by_id(drug_id)
+    if drug is None:
+        raise NotFoundException("药物不存在")
+
+    return {
+        "n": drug.rrt_training_count or 0,
+        "mean": float(drug.rrt_mean) if drug.rrt_mean is not None else None,
+        "std": float(drug.rrt_std) if drug.rrt_std is not None else None,
+    }
+
+
+def init_drug_rrt_stats_from_reference_peaks(drug_id: int) -> None:
+    """
+    从参考峰初始化药物的 RRT 学习统计量。
+
+    取该药物第一个参考峰的相对保留时间作为初始均值；若不存在相对保留时间，
+    则使用保留时间。初始标准差设为 1.0，训练计数 N=1。
+    """
+    drug = DrugDAO.get_by_id(drug_id)
+    if drug is None:
+        raise NotFoundException("药物不存在")
+
+    peaks = ReferencePeakDAO.get_by_drug_id(drug_id)
+    if not peaks:
+        return
+
+    peak = peaks[0]
+    if peak.relative_retention_time is not None:
+        mean = Decimal(str(peak.relative_retention_time))
+    elif peak.retention_time is not None:
+        mean = Decimal(str(peak.retention_time))
+    else:
+        return
+
+    drug.rrt_training_count = 1
+    drug.rrt_mean = mean
+    drug.rrt_std = Decimal("1.0")
+    db.session.commit()
+
+
+def update_drug_rrt_stats(drug_id: int, rrt_value: float) -> dict:
+    """
+    使用新的 RRT 样本增量更新药物的高斯统计量。
+
+    更新公式（Welford 等价形式）：
+        N = N + 1
+        μ_new = (N * μ_old + x) / (N + 1)
+        σ²_new = (1/(N+1)) * [x² + N * (σ²_old + μ_old²)] - μ_new²
+        σ_new = sqrt(σ²_new)
+
+    :param drug_id: 药物 ID
+    :param rrt_value: 新的 RRT 观测值
+    :return: 更新后的统计量
+    """
+    drug = DrugDAO.get_by_id(drug_id)
+    if drug is None:
+        raise NotFoundException("药物不存在")
+
+    x = Decimal(str(rrt_value))
+
+    n_old = drug.rrt_training_count or 0
+    mu_old = drug.rrt_mean
+    std_old = drug.rrt_std
+
+    if n_old <= 0 or mu_old is None or std_old is None:
+        # 尚未初始化时，先执行单样本初始化
+        init_drug_rrt_stats_from_reference_peaks(drug_id)
+        n_old = drug.rrt_training_count or 0
+        mu_old = drug.rrt_mean
+        std_old = drug.rrt_std
+
+    if n_old <= 0 or mu_old is None or std_old is None:
+        # 没有参考峰，无法学习
+        raise ParamValidationException("药物缺少参考峰，无法训练 RRT")
+
+    n_old_dec = Decimal(n_old)
+    n_new = n_old + 1
+
+    mu_new = (n_old_dec * mu_old + x) / n_new
+    variance_new = (
+        (x ** 2 + n_old_dec * (std_old ** 2 + mu_old ** 2)) / n_new
+    ) - mu_new ** 2
+
+    # 避免浮点/Decimal 精度导致的极小负数
+    variance_new = max(variance_new, Decimal("0"))
+    std_new = Decimal(str(math.sqrt(float(variance_new))))
+
+    drug.rrt_training_count = n_new
+    drug.rrt_mean = mu_new
+    drug.rrt_std = std_new
+    db.session.commit()
+
+    return {
+        "n": int(n_new),
+        "mean": float(mu_new),
+        "std": float(std_new),
     }
