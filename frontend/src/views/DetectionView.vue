@@ -200,6 +200,7 @@
                   border
                   stripe
                   highlight-current-row
+                  class="detection-result-table"
                   style="width: 100%"
                   @current-change="handleDrugSelect"
                 >
@@ -224,9 +225,13 @@
                       {{ row.matchedPeakCount }} / {{ row.totalPeakCount }}
                     </template>
                   </el-table-column>
-                  <el-table-column label="状态" width="100">
+                  <el-table-column label="状态" width="85">
                     <template #default="{ row }">
-                      <el-tag :type="row.isDetected ? 'danger' : 'info'" size="small">
+                      <el-tag
+                        :type="row.isDetected ? 'danger' : 'info'"
+                        size="small"
+                        class="status-tag"
+                      >
                         {{ row.isDetected ? '检出' : '未检出' }}
                       </el-tag>
                     </template>
@@ -237,6 +242,7 @@
                         link
                         type="primary"
                         size="small"
+                        class="train-button"
                         @click.stop="handleTrainRrt(row)"
                       >
                         确认并训练
@@ -1457,6 +1463,21 @@ onBeforeUnmount(() => {
 
 :deep(.el-table__body tr.current-row > td.el-table__cell .cell) {
   color: rgba(255, 255, 255, 0.95) !important;
+}
+
+/* 修复检测结果表格状态/操作列文字堆叠 */
+.detection-result-table {
+  :deep(.status-tag) {
+    white-space: nowrap;
+  }
+
+  :deep(.train-button) {
+    white-space: nowrap;
+  }
+
+  :deep(.el-table__cell .cell) {
+    line-height: 1.4;
+  }
 }
 
 .chart-card {
